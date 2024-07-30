@@ -5,8 +5,8 @@ variable "aws_region" {
 }
 
 variable "vpc_cidr" {
-    description = "CIDR block for the VPC" # Description of the variable
-    type        = string                  # Type of the variable
-    default     = "100.0.0.0/16"          # Default value for the variable
-  
+  description = "CIDR block for the VPC" # Description of the variable
+  type        = string                   # Type of the variable
+  default     = "100.0.0.0/16"           # Default value for the variable
+
 }
