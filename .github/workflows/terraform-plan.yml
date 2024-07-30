@@ -53,6 +53,7 @@ jobs:
 
       - name: Terraform plan
         id: plan
+        working-directory: ./main
         if: github.event_name == 'pull_request'
         run: terraform plan -no-color -input=false
         continue-on-error: true
