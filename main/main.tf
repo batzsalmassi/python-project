@@ -1,12 +1,21 @@
-provider "aws" {
-  region = var.aws_region # Specify the AWS region to use
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 3.0.0"  # Specify the version constraint as needed
+    }
+  }
 }
 
-resource "vpc" "main" {
-  cidr_block           = var.vpc_cidr_block # Specify the CIDR block for the VPC
+provider "aws" {
+  region = var.aws_region  # Specify your desired region
+}
+
+resource "aws_vpc" "main" {
+  cidr_block       = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
-    Name = var.vpc_name # Specify the name of the VPC
+    Name = "main-vpc"
   }
 }
