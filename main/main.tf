@@ -8,14 +8,19 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region # Specify your desired region
+  region = var.aws_region
 }
 
-resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = false
-  enable_dns_hostnames = true
-  tags = {
-    Name = "main-vpc"
-  }
+module "vpc" {
+  source = "./modules/vpc"
+
+  name = var.name
+  cidr = var.cidr
+  enable_dns_support = var.enable_dns_support
+  enable_dns_hostnames = var.enable_dns_hostnames
+  public_subnet_count = var.public_subnet_count
+  private_subnet_count = var.private_subnet_count
+
+  tags = var.tags
+
 }

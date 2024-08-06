@@ -1,8 +1,3 @@
-variable "aws_region" {
-  description = "AWS region" # Description of the variable
-  type        = string       # Type of the variable
-}
-
 variable "cidr" {
   description = "CIDR block for the VPC"
   type        = string
@@ -13,14 +8,14 @@ variable "enable_dns_support" {
   type        = bool
 }
 
-variable "public_subnet_count" {
-  description = "Number of public subnets"
-  type        = number
-}
-
 variable "enable_dns_hostnames" {
   description = "Enable DNS hostnames in the VPC"
   type        = bool
+}
+
+variable "public_subnet_count" {
+  description = "Number of public subnets"
+  type        = number
 }
 
 variable "private_subnet_count" {
