@@ -34,3 +34,4 @@ terraform.rc
 venv/
 __pycache__/
 .DS_Store
+shodan_results.csv
