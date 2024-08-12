@@ -14,11 +14,11 @@ provider "aws" {
 module "vpc" {
   source = "./modules/vpc"
 
-  name = var.name
-  cidr = var.cidr
-  enable_dns_support = var.enable_dns_support
+  name                 = var.name
+  cidr                 = var.cidr
+  enable_dns_support   = var.enable_dns_support
   enable_dns_hostnames = var.enable_dns_hostnames
-  public_subnet_count = var.public_subnet_count
+  public_subnet_count  = var.public_subnet_count
   private_subnet_count = var.private_subnet_count
 
   tags = var.tags
