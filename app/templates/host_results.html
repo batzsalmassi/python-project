@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Host Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            margin-top: 50px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #00ffff;
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: color 0.3s ease;
+        }
+        .back-link:hover {
+            color: #1f4068;
+        }
+        .result {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid #00ffff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: transform 0.3s ease;
+        }
+        .result:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+        }
+        .result h2 {
+            margin-top: 0;
+            color: #00ffff;
+        }
+        .result p {
+            margin: 5px 0;
+        }
+        .result h3 {
+            color: #00ffff;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Host Results</h1>
+        <a class="back-link" href="/">← Back to search</a>
+        <div class="result">
+            <h2>IP: {{ results.ip_str }}</h2>
+            <p><strong>Country:</strong> {{ results.country_name }}</p>
+            <p><strong>City:</strong> {{ results.city }}</p>
+            <p><strong>Organization:</strong> {{ results.org }}</p>
+            <p><strong>ISP:</strong> {{ results.isp }}</p>
+            <p><strong>Operating System:</strong> {{ results.os }}</p>
+            <p><strong>Last Update:</strong> {{ results.last_update }}</p>
+            <p><strong>Hostnames:</strong> {{ results.hostnames }}</p>
+            <p><strong>Domains:</strong> {{ results.domains }}</p>
+            <p><strong>Vulnerabilities:</strong> {{ results.vulns }}</p>
+            {% for data in results.data %}
+            <div>
+                <h3>Port: {{ data.port }}</h3>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
