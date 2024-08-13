@@ -1,16 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search by Filters</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             color: #ffffff;
             margin: 0;
             padding: 20px;
+            overflow: hidden;
         }
+
+        .video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            object-fit: cover;
+        }
+
         .container {
             max-width: 600px;
             margin: auto;
@@ -20,22 +33,28 @@
             border-radius: 8px;
             backdrop-filter: blur(10px);
             margin-top: 50px;
+            position: relative;
+            z-index: 1;
         }
+
         h1 {
             text-align: center;
             font-size: 2.5rem;
             margin-bottom: 20px;
             text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
         }
+
         .form-group {
             margin-bottom: 15px;
         }
+
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
             color: #00ffff;
         }
+
         input, select {
             width: 100%;
             padding: 10px;
@@ -46,9 +65,11 @@
             color: #ffffff;
             box-sizing: border-box;
         }
+
         input::placeholder {
             color: #cccccc;
         }
+
         button {
             width: 100%;
             background-color: #1f4068;
@@ -61,6 +82,7 @@
             box-shadow: 0 0 15px rgba(31, 64, 104, 0.5);
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
+
         button:hover {
             background-color: #1b1b2f;
             box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
@@ -68,6 +90,14 @@
     </style>
 </head>
 <body>
+
+    <!-- Video as background -->
+    <video class="video-background" autoplay muted loop>
+        <source src="https://media.istockphoto.com/id/1352285694/video/data-protection-is-a-concept-in-cybersecurity-and-privacy-technologies-there-is-a-shield-on.mp4?s=mp4-640x640-is&k=20&c=IF9muMRoTGfkD1dvzG8yCJOC7rZU8F_r8PjmKuH-EHk=" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Content over the video -->
     <div class="container">
         <h1>Search by Filters</h1>
         <form action="/perform_filter_search" method="post">
@@ -94,5 +124,6 @@
             <button type="submit">Search</button>
         </form>
     </div>
+
 </body>
 </html>
