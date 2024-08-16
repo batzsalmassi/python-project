@@ -1,12 +1,15 @@
 name: Docker Image CI
 
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     paths:
       - 'app/**'
 
 jobs:
   docker:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       -
