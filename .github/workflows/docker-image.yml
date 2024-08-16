@@ -26,7 +26,7 @@ jobs:
         uses: docker/build-push-action@v6
        # run: docker build . --tag my-app:latest
         with:
-          tags: seansal/shodan_app:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/shodan_app:latest
           push: true
           
           
