@@ -59,16 +59,16 @@ def perform_filter_search(): # Define a function to perform a search with filter
 
 
     filters = [] # Create an empty list to store the filters
-    if port: 
-        filters.append(f'port:{port}')
-    elif country:
-        filters.append(f'country:{country}')
-    elif product:
-        filters.append(f'product:{product}')
-    elif os:
-        filters.append(f'os:{os}')
-    elif category:
-        filters.append(f'category:{category}')
+    if port: # Check if the port number is provided
+        filters.append(f'port:{port}') # Add the port filter to the list
+    if country: # Check if the country code is provided
+        filters.append(f'country:{country}') # Add the country filter to the list
+    if product: # Check if the product name is provided
+        filters.append(f'product:{product}') # Add the product filter to the list
+    if os: # Check if the operating system name is provided
+        filters.append(f'os:{os}') # Add the operating system filter to the list
+    if category: # Check if the category name is provided
+        filters.append(f'category:{category}') # Add the category filter to the list
     
     query = ' '.join(filters) # Join the filters list into a single string with spaces
     try: # Try to search with the filters
