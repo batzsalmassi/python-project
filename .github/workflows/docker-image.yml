@@ -24,9 +24,8 @@ jobs:
       -
         name: Build and push
         uses: docker/build-push-action@v6
-       # run: docker build . --tag my-app:latest
         with:
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/shodan_app:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/shodan_app:${{ github.run_id }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/shodan_app:latest
           push: true
-          
-          
