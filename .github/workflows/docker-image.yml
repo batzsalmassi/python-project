@@ -27,5 +27,5 @@ jobs:
        # run: docker build . --tag my-app:latest
         with:
           push: true
-          tags: shodan_app:latest
+          tags: $username/image:latest
           
