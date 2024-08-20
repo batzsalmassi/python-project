@@ -7,11 +7,7 @@ import csv # Import the CSV module
 app = Flask(__name__) # Create an instance of the Flask class with the name of the running application as the argument
 
 # Load the Shodan API key from environment variables
-shodan_secret = '../secret/secret-key'
-# Load the Shodan API key from environment variables
-with open(shodan_secret, 'r') as file:
-    shodan_secret = file.read().split()
-    shodan_secret = shodan_secret[2]
+shodan_secret = os.getenv('SHODAN_API_KEY') # Get the SHODAN_API_KEY from environment variables
 
 # Ensure the API key is available
 if not shodan_secret:
