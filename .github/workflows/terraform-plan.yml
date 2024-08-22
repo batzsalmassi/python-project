@@ -6,7 +6,7 @@ on:
       - 'main/**'
   pull_request:
     paths:
-      - 'main/**' 
+      - 'main/**'
   workflow_dispatch:
 
 env:
@@ -22,12 +22,13 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write  # Add this permission to allow triggering actions
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}  # Check out the correct branch
+          ref: ${{ github.head_ref }}
 
       - name: Setup Terraform with specified version on the runner
         uses: hashicorp/setup-terraform@v2
@@ -46,24 +47,39 @@ jobs:
         continue-on-error: true  # Allow the workflow to proceed even if this fails
 
       - name: Automatically format Terraform code if not formatted
-        if: steps.fmt-check.outcome == 'failure'  # Only run if the format check fails
+        if: steps.fmt-check.outcome == 'failure'
         working-directory: ./main
         run: terraform fmt
 
       - name: Commit formatted code
-        if: steps.fmt-check.outcome == 'failure'  # Only commit if the format check fails
+        if: steps.fmt-check.outcome == 'failure'
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add .
           git commit -m "Automatically formatted Terraform code"
-          git push origin HEAD:${{ github.head_ref }}  # Push changes back to the branch
+          git push origin HEAD:${{ github.head_ref }}
+
+      - name: Trigger workflow again after formatting
+        if: steps.fmt-check.outcome == 'failure'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const githubToken = process.env.GITHUB_TOKEN;
+            const octokit = new github.getOctokit(githubToken);
+
+            await octokit.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: context.workflow,
+              ref: context.ref,
+            });
 
       - name: Terraform plan
         id: plan
         working-directory: ./main
         run: terraform plan -no-color -input=false
-        continue-on-error: true  # Allow the workflow to proceed even if this fails
+        continue-on-error: true
 
       - name: Post Plan Comment
         uses: actions/github-script@v6
