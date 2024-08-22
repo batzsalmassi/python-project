@@ -5,35 +5,35 @@ variable "aws_region" {
 
 variable "vpc_cidr" {
   default = "10.10.0.0/16"
-  type = string
+  type    = string
 }
 
 variable "azs" {
   default = ["us-east-1a"] # , "us-east-1b"]
-  type = list(string)
-  
+  type    = list(string)
+
 }
 
 variable "private_subnets" {
   default = ["10.10.1.0/24", "10.10.3.0/24"]
-  type = list(string)
+  type    = list(string)
 }
 
 variable "public_subnets" {
   default = ["10.10.2.0/28"] # ,"10.203.102.0/28"]
-  type = list(string)
+  type    = list(string)
 }
 
 
 variable "instance_type" {
-  default = ["t3.2xlarge","t2.small"]
-  type = list(string)
-  
+  default = ["t3.2xlarge", "t2.small"]
+  type    = list(string)
+
 }
 
 variable "name" {
-  default = ["Linux","Windows Server"]  
-  type = list(string)
+  default = ["Linux", "Windows Server"]
+  type    = list(string)
 }
 
 
