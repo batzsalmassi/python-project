@@ -25,7 +25,7 @@ module "vpc" {
   version = "5.0.0"
 
   name                        = "py-prod-proj-vpc"
-  cidr                          = var.vpc_cidr
+  cidr                        = var.vpc_cidr
   azs                           = var.azs
   private_subnets               = var.private_subnets
   public_subnets                = var.public_subnets
