@@ -43,14 +43,14 @@ jobs:
       - name: Create backend.tf
         run: |
           cat <<EOF > ./main/backend.tf
-          terraform {
-            backend "s3" {
-              bucket = "${{ secrets.BUCKET_TF_STATE }}"  # Use the bucket name from secrets
-              key    = "terraform/python-master-project.tfstate"  # Specify the key for the state file
-              region = "${{ secrets.BACKEND_REGION }}"  # Use the AWS region from Github secrets
-            }
-          }
-          EOF  # Dynamically create the backend.tf file with the necessary S3 backend configuration
+terraform {
+  backend "s3" {
+    bucket = "${{ secrets.BUCKET_TF_STATE }}"
+    key    = "terraform/python-master-project.tfstate"
+    region = "${{ env.AWS_REGION }}"
+  }
+}
+EOF
 
       - name: Terraform init with backend
         working-directory: ./main
