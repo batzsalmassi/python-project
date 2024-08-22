@@ -3,16 +3,16 @@ name: "Terraform Plan"
 on:
   push:
     paths:
-      - 'main/**'
+      - 'main/**'  # Trigger on any push to files under the 'main/' directory
   pull_request:
     paths:
-      - 'main/**'
-  workflow_dispatch:
+      - 'main/**'  # Trigger on any pull request that modifies files under the 'main/' directory
+  workflow_dispatch:  # Allows manual triggering of the workflow
 
 env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Access key for AWS
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Secret key for AWS
+  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}  # S3 bucket name for Terraform state
 
 jobs:
   terraform:
@@ -20,45 +20,66 @@ jobs:
     name: "Terraform Plan"
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
-      actions: write  # Add this permission to allow triggering actions
+      contents: write  # Required permissions for committing code
+      pull-requests: write  # Required permissions for commenting on pull requests
+      actions: write  # Required permissions for triggering actions
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref }}  # Checkout the branch that triggered the workflow
 
       - name: Setup Terraform with specified version on the runner
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.8.2
+          terraform_version: 1.8.2  # Set the Terraform version to 1.8.2
 
-      - name: Terraform init
+      - name: Initialize Terraform to Extract Variables
         id: init
         working-directory: ./main
-        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
+        run: terraform init  # Initialize Terraform to prepare for retrieving variables
+
+      - name: Get AWS Region from Terraform Variables
+        id: get-region
+        working-directory: ./main
+        run: echo "AWS_REGION=$(terraform output -raw aws_region)" >> $GITHUB_ENV  # Extract AWS region from Terraform output and set it as an environment variable
+
+      - name: Create backend.tf
+        run: |
+          cat <<EOF > ./main/backend.tf
+          terraform {
+            backend "s3" {
+              bucket = "${{ secrets.BUCKET_TF_STATE }}"  # Use the bucket name from secrets
+              key    = "terraform/python-master-project.tfstate"  # Specify the key for the state file
+              region = "${{ env.AWS_REGION }}"  # Use the AWS region from the environment variable
+            }
+          }
+          EOF  # Dynamically create the backend.tf file with the necessary S3 backend configuration
+
+      - name: Terraform init with backend
+        working-directory: ./main
+        run: terraform init  # Initialize Terraform with the S3 backend configuration
 
       - name: Terraform format check
         id: fmt-check
         working-directory: ./main
-        run: terraform fmt -check
-        continue-on-error: true  # Allow the workflow to proceed even if this fails
+        run: terraform fmt -check  # Check if the Terraform code is formatted correctly
+        continue-on-error: true  # Allow the workflow to continue even if the format check fails
 
       - name: Automatically format Terraform code if not formatted
         if: steps.fmt-check.outcome == 'failure'
         working-directory: ./main
-        run: terraform fmt
+        run: terraform fmt  # Automatically format the Terraform code if the format check fails
 
       - name: Commit formatted code
         if: steps.fmt-check.outcome == 'failure'
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add .
-          git commit -m "Automatically formatted Terraform code"
-          git push origin HEAD:${{ github.head_ref }}
+          git config --global user.name "GitHub Actions"  # Set Git username for the commit
+          git config --global user.email "actions@github.com"  # Set Git email for the commit
+          git add .  # Add all changes
+          git commit -m "Automatically formatted Terraform code"  # Commit the formatted code
+          git push origin HEAD:${{ github.head_ref }}  # Push the commit back to the branch
 
       - name: Trigger workflow again after formatting
         if: steps.fmt-check.outcome == 'failure'
@@ -73,19 +94,19 @@ jobs:
               repo: context.repo.repo,
               workflow_id: context.workflow,
               ref: context.ref,
-            });
+            });  # Trigger the workflow again after the formatting changes are pushed
 
       - name: Terraform plan
         id: plan
         working-directory: ./main
-        run: terraform plan -no-color -input=false
-        continue-on-error: true
+        run: terraform plan -no-color -input=false  # Generate the Terraform plan
+        continue-on-error: true  # Allow the workflow to continue even if the plan fails
 
       - name: Post Plan Comment
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
         env:
-          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"  # Capture the plan output
         with:
           script: |
             const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt-check.outcome }}\`
@@ -106,8 +127,8 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: output
-            })
+            });  # Post a comment on the pull request with the Terraform plan output
 
       - name: Terraform Plan Status
         if: steps.plan.outcome == 'failure'
-        run: exit 1
+        run: exit 1  # Exit with an error if the Terraform plan fails
