@@ -40,13 +40,6 @@ jobs:
         working-directory: ./main
         run: terraform init  # Initialize Terraform to prepare for retrieving variables
 
-      - name: Get AWS Region from Terraform Variables
-        id: get-region
-        working-directory: ./main
-        run: |
-          REGION=$(terraform output -raw aws_region) || exit 1
-          echo "AWS_REGION=$REGION" >> $GITHUB_ENV
-
       - name: Create backend.tf
         run: |
           cat <<EOF > ./main/backend.tf
@@ -54,7 +47,7 @@ jobs:
             backend "s3" {
               bucket = "${{ secrets.BUCKET_TF_STATE }}"  # Use the bucket name from secrets
               key    = "terraform/python-master-project.tfstate"  # Specify the key for the state file
-              region = "${{ env.AWS_REGION }}"  # Use the AWS region from the environment variable
+              region = "${{ secrets.BACKEND_REGION }}"  # Use the AWS region from Github secrets
             }
           }
           EOF  # Dynamically create the backend.tf file with the necessary S3 backend configuration
