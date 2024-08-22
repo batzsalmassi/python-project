@@ -43,7 +43,9 @@ jobs:
       - name: Get AWS Region from Terraform Variables
         id: get-region
         working-directory: ./main
-        run: echo "AWS_REGION=$(terraform output -raw aws_region)" >> $GITHUB_ENV  # Extract AWS region from Terraform output and set it as an environment variable
+        run: |
+          REGION=$(terraform output -raw aws_region) || exit 1
+          echo "AWS_REGION=$REGION" >> $GITHUB_ENV
 
       - name: Create backend.tf
         run: |
