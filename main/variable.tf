@@ -1,39 +1,51 @@
 variable "aws_region" {
-  description = "AWS region" # Description of the variable
-  type        = string       # Type of the variable
+  default = "us-east-1"
 }
 
-variable "cidr" {
-  description = "CIDR block for the VPC"
-  type        = string
+
+variable "vpc_cidr" {
+  default = "10.10.0.0/16"
+  type    = string
 }
 
-variable "enable_dns_support" {
-  description = "Enable DNS support in the VPC"
-  type        = bool
+variable "azs" {
+  default = ["us-east-1a"] # , "us-east-1b"]
+  type    = list(string)
+
 }
 
-variable "public_subnet_count" {
-  description = "Number of public subnets"
-  type        = number
+variable "private_subnets" {
+  default = ["10.10.1.0/24", "10.10.3.0/24"]
+  type    = list(string)
 }
 
-variable "enable_dns_hostnames" {
-  description = "Enable DNS hostnames in the VPC"
-  type        = bool
+variable "public_subnets" {
+  default = ["10.10.2.0/24", "10.10.4.0/24"]
+  type    = list(string)
 }
 
-variable "private_subnet_count" {
-  description = "Number of private subnets"
-  type        = number
-}
 
-variable "tags" {
-  description = "Tags for the VPC and its subnets"
-  type        = map(string)
+variable "instance_type" {
+  default = ["t3.2xlarge", "t2.small"]
+  type    = list(string)
+
 }
 
 variable "name" {
-  description = "Name prefix for the VPC and subnets"
-  type        = string
+  default = ["Linux", "Windows Server"]
+  type    = list(string)
+}
+
+
+# create ami without ami latest image
+
+#---------------data aws_ami-------------------#
+# Get latest Amazon Linux 2 AMI
+data "aws_ami" "amazon-linux" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm*"]
+  }
 }
