@@ -47,7 +47,7 @@ jobs:
             backend "s3" {
               bucket = "${{ secrets.BUCKET_TF_STATE }}"
               key    = "terraform/python-master-project.tfstate"
-              region = "${{ env.AWS_REGION }}"
+              region = "${{ secrets.BUCKET_TF_STATE }}"
             }
           }
           EOF
