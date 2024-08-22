@@ -1,8 +1,6 @@
 name: "Terraform Plan"
 
 on:
-  #push:
-    #branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -10,7 +8,7 @@ on:
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE}}
+  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
 
 jobs:
   terraform:
@@ -35,10 +33,25 @@ jobs:
         working-directory: ./main
         run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
 
-      - name: Terraform format
-        id: fmt
+      - name: Terraform format check
+        id: fmt-check
         working-directory: ./main
         run: terraform fmt -check
+        continue-on-error: true  # Allow the workflow to proceed even if this fails
+
+      - name: Automatically format Terraform code if not formatted
+        if: steps.fmt-check.outcome == 'failure'  # Only run if the format check fails
+        working-directory: ./main
+        run: terraform fmt
+
+      - name: Commit formatted code
+        if: steps.fmt-check.outcome == 'failure'  # Only commit if the format check fails
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "Automatically formatted Terraform code"
+          git push
 
       - name: Terraform plan
         id: plan
@@ -54,7 +67,7 @@ jobs:
           PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
         with:
           script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt-check.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
