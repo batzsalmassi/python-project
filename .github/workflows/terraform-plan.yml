@@ -1,6 +1,9 @@
 name: "Terraform Plan"
 
 on:
+  push:
+    paths:
+      - 'app/**'
   pull_request:
     paths:
       - 'app/**' 
