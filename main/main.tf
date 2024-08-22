@@ -24,7 +24,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
 
-  name                        = "py-prod-proj-vpc"
+  name                          = "py-prod-proj-vpc"
   cidr                          = var.vpc_cidr
   azs                           = var.azs
   private_subnets               = var.private_subnets
