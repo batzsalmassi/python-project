@@ -102,4 +102,4 @@ def perform_filter_search(): # Define a function to perform a search with filter
         return f"Unexpected Error: {str(e)}" # Return the error message e contain the error message.
 
 if __name__ == "__main__": # Check if the script is being run directly
-    app.run(host='0.0.0.0', port=4000) # Run the Flask application on host
+    app.run(host='0.0.0.0', port=80) # Run the Flask application on host
