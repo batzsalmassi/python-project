@@ -14,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application files
 COPY app /app
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Make port 80 available to the world outside this container
+EXPOSE 80
 
 # Debug: List the contents of the working directory
 RUN ls -la /app
