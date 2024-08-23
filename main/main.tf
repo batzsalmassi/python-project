@@ -35,6 +35,7 @@ module "vpc" {
   enable_dns_support            = true
   manage_default_network_acl    = false
   manage_default_security_group = false
+  map_public_ip_on_launch       = true
 
 }
 #---------------security_group-------------------#
@@ -78,6 +79,9 @@ resource "aws_security_group" "Allow_services" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+
+
 
 
 #---------------key_pair-------------------#

@@ -9,18 +9,18 @@ variable "vpc_cidr" {
 }
 
 variable "azs" {
-  default = ["us-east-1a"] # , "us-east-1b"]
+  default = ["us-east-1a", "us-east-1b"]
   type    = list(string)
 
 }
 
 variable "private_subnets" {
-  default = ["10.10.1.0/24", "10.10.3.0/24"]
+  default = ["10.10.1.0/24", "10.10.2.0/24"]
   type    = list(string)
 }
 
 variable "public_subnets" {
-  default = ["10.10.2.0/24", "10.10.4.0/24"]
+  default = ["10.10.3.0/24", "10.10.4.0/24"]
   type    = list(string)
 }
 
@@ -35,7 +35,6 @@ variable "name" {
   default = ["Linux", "Windows Server"]
   type    = list(string)
 }
-
 
 # create ami without ami latest image
 
