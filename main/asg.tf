@@ -1,7 +1,7 @@
 variable "shodan_api_key" {
   description = "Shodan API key for accessing the API"
   type        = string
-  default     = ""  # Defaults to an empty string if not provided
+  default     = "" # Defaults to an empty string if not provided
 }
 
 #---------------asg + Launch template-------------------#
