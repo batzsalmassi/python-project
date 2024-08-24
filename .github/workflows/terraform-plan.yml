@@ -14,7 +14,6 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Secret key for AWS
   BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}  # S3 bucket name for Terraform state
   AWS_REGION: ${{ secrets.BACKEND_REGION }}  # AWS region (e.g., us-east-1)
-  SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}  # Shodan API key
 
 jobs:
   terraform:
@@ -98,14 +97,17 @@ jobs:
         working-directory: ./main
         env:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}  # Make the SHODAN_API_KEY available during plan
-        run: terraform plan -no-color -input=false  # Generate the Terraform plan
+        run: |
+          terraform plan -no-color -input=false -var "shodan_api_key=${{ secrets.SHODAN_API_KEY }}" | tee plan_output.txt
         continue-on-error: true  # Allow the workflow to continue even if the plan fails
+
+      - name: Read Terraform Plan Output
+        id: read_plan
+        run: echo "PLAN_OUTPUT=$(<plan_output.txt)" >> $GITHUB_ENV
 
       - name: Post Plan Comment
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
-        env:
-          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"  # Capture the plan output
         with:
           script: |
             const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt-check.outcome }}\`
@@ -115,7 +117,7 @@ jobs:
             <details><summary>Show Plan</summary>
 
             \`\`\`\n
-            ${process.env.PLAN}
+            ${process.env.PLAN_OUTPUT}
             \`\`\`
 
             </details>
