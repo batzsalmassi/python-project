@@ -36,8 +36,6 @@ variable "name" {
   type    = list(string)
 }
 
-# create ami without ami latest image
-
 #---------------data aws_ami-------------------#
 # Get latest Amazon Linux 2 AMI
 data "aws_ami" "amazon-linux" {

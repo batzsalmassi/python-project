@@ -1,3 +1,9 @@
+variable "shodan_api_key" {
+  description = "Shodan API key for accessing the API"
+  type        = string
+  default     = ""  # Defaults to an empty string if not provided
+}
+
 #---------------asg + Launch template-------------------#
 
 module "asg" {
@@ -17,6 +23,7 @@ module "asg" {
 
 
 
+
   # Launch template
   launch_template_name        = "shodan-app-launch-template"
   launch_template_description = "Launch template for asg"
@@ -24,7 +31,7 @@ module "asg" {
   image_id                    = data.aws_ami.amazon-linux.id
   key_name                    = "TF-key"
   instance_type               = var.instance_type[1]
-  user_data                   = base64encode(templatefile("user_data.sh", {}))
+  user_data                   = base64encode(templatefile("user_data.sh", { SHODAN_API_KEY = var.shodan_api_key }))
   security_groups             = [aws_security_group.Allow_services.id]
 
   target_group_arns = module.alb.target_group_arns # Association the target group to asg
