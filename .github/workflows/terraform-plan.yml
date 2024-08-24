@@ -14,6 +14,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Secret key for AWS
   BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}  # S3 bucket name for Terraform state
   AWS_REGION: ${{ secrets.BACKEND_REGION }}  # AWS region (e.g., us-east-1)
+  SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}  # Shodan API key
 
 jobs:
   terraform:
@@ -95,6 +96,8 @@ jobs:
       - name: Terraform plan
         id: plan
         working-directory: ./main
+        env:
+          SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}  # Make the SHODAN_API_KEY available during plan
         run: terraform plan -no-color -input=false  # Generate the Terraform plan
         continue-on-error: true  # Allow the workflow to continue even if the plan fails
 
