@@ -65,11 +65,20 @@
             background-color: #1b1b2f;
             box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
         }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Search by IP</h1>
+        {% if error_message %}
+        <div class="error-message">{{ error_message }}</div>
+        {% endif %}
         <form action="/perform_ip_search" method="post">
             <div class="form-group">
                 <label for="ip">IP Address</label>
