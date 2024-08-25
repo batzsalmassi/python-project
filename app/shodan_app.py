@@ -29,21 +29,37 @@ def search_by_ip(): # Define a function to return the search_by_ip page
 def search_by_filters(): # Define a function to return the search_by_filters page
     return render_template('search_by_filters.html') # Return the search_by_filters.html template
 
-@app.route('/perform_ip_search', methods=['POST']) # Define a route for the perform_ip_search URL with the POST method
+@app.route('/perform_ip_search', methods=['POST'])
 def perform_ip_search():
-    ip = request.form.get('ip') # Get the IP address from the form data
+    ip = request.form.get('ip')  # Get the IP address from the form data
     try:
         logging.debug(f"Searching for IP: {ip}")
-        results = api.host(ip) # Search for the IP address using the Shodan API Get host method
+        results = api.host(ip)  # Search for the IP address using the Shodan API host method
         logging.debug(f"Results: {results}")
-        # Save the results to a JSON file
-        return render_template('host_results.html', results=results) # Render the host_results.html template with the search results
-    except shodan.APIError as e: # Handle Shodan API errors
+
+        # Print results for debugging
+        print(f"Results from Shodan for IP {ip}: {results}")
+
+        # Check if the results contain any data
+        if results and 'ip_str' in results:
+            # Render the results if there is valid information
+            return render_template('host_results.html', results=results)
+        else:
+            # If no relevant data is found, show an error message
+            error_message = "No information available for that IP."
+            logging.info(f"No information found for IP: {ip}")
+            return render_template('search_by_ip.html', error_message=error_message)
+
+    except shodan.APIError as e:
         logging.error(f"Shodan API Error: {str(e)}")
-        return f"Error: {str(e)}" # Return the error message e contain the error message.
-    except Exception as e: # Handle unexpected errors
+        error_message = f"Error: {str(e)}"
+        return render_template('search_by_ip.html', error_message=error_message)  # Return to the search page with an error message
+
+    except Exception as e:
         logging.error(f"Unexpected Error: {str(e)}")
-        return f"Unexpected Error: {str(e)}" # Return the error message e contain the error message.
+        error_message = f"Unexpected Error: {str(e)}"
+        return render_template('search_by_ip.html', error_message=error_message)  # Return to the search page with an error message
+
 
 @app.route('/perform_filter_search', methods=['POST']) # Define a route for the perform_filter_search URL with the POST method
 def perform_filter_search(): # Define a function to perform a search with filters
