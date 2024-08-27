@@ -91,7 +91,7 @@ jobs:
             await octokit.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: '<YOUR-WORKFLOW-FILENAME>.yml',
+              workflow_id: 'terraform-plan.yml',
               ref: context.ref
             });
 
