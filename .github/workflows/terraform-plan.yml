@@ -4,9 +4,9 @@ on:
   push:
     paths:
       - 'main/**'
-  pull_request:
-    paths:
-      - 'main/**'
+  #pull_request:
+    #paths:
+      #- 'main/**'
   workflow_dispatch:
 
 env:
