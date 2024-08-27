@@ -117,18 +117,17 @@ jobs:
             const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt-check.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-
+      
             <details><summary>Show Plan</summary>
-
+      
             \`\`\`
             ${process.env.PLAN_OUTPUT}
             \`\`\`
-
+      
             </details>
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-
-            const octokit = github.getOctokit(core.getInput('github-token'));
-            await octokit.rest.issues.createComment({
+      
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
