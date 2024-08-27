@@ -96,14 +96,15 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github, context } = require('@actions/github');
-            const octokit = github.getOctokit(core.getInput('github-token'));
-
-            await octokit.rest.actions.createWorkflowDispatch({
+            // `github` and `context` are automatically available here
+            const workflowId = 'terraform-plan.yml';  // Update this to your actual workflow file name
+            const branchRef = context.ref;  // The reference to the branch (e.g., "refs/heads/main")
+      
+            await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'terraform-plan.yml',
-              ref: context.ref
+              workflow_id: workflowId,
+              ref: branchRef,
             });
 
       - name: Terraform plan
