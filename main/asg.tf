@@ -65,20 +65,20 @@ module "alb" {
     }
   ]
 
-# https with certificate 
-https_listeners = [
+  # https with certificate 
+  https_listeners = [
     {
-      port               = 443
-      protocol           = "HTTPS"
-      certificate_arn    = module.acm.acm_certificate_arn
-      
-      # If there are multiple target groups, this configuration is important 
-      target_group_index = 0 
-    }
-] 
+      port            = 443
+      protocol        = "HTTPS"
+      certificate_arn = module.acm.acm_certificate_arn
 
-# redirect http to https
-http_tcp_listeners = [
+      # If there are multiple target groups, this configuration is important 
+      target_group_index = 0
+    }
+  ]
+
+  # redirect http to https
+  http_tcp_listeners = [
     {
       port        = 80
       protocol    = "HTTP"
