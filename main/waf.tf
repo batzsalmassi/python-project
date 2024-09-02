@@ -108,7 +108,7 @@ resource "aws_wafv2_ip_set" "allow_ips" {
   ip_address_version = "IPV4"
   addresses = [
     "84.228.161.67/32",
-    "8.29.231.173/32"
+    "77.137.78.61/32"
   ]
 }
 
@@ -123,6 +123,7 @@ resource "aws_wafv2_regex_pattern_set" "invalid_url" {
     regex_string = "^/.+"
   }
 }
+
 
 # creare regex to block after the / 
 resource "aws_wafv2_regex_pattern_set" "allowed-url" {

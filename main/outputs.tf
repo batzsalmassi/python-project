@@ -2,7 +2,7 @@ output "alb" {
   value = module.alb
 }
 
-output "lb_dns_name" {
-  value       = "http://${module.alb.lb_dns_name}/"
-  description = "DNS name of ALB."
+output "dns_a_record_route53" {
+  value       = "https://${aws_route53_record.seansalmassi-com.name}"
+  description = "a record for alb."
 }
