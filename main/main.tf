@@ -11,14 +11,14 @@ terraform {
 # Default provider for CloudGuru AWS sandbox environment
 provider "aws" {
   region  = var.aws_region
-  profile = "CloudGuru"  # Profile for CloudGuru sandbox
+  profile = "CloudGuru" # Profile for CloudGuru sandbox
 }
 
 # Aliased provider for personal AWS account (Route 53 management)
 provider "aws" {
   alias   = "personal"
   region  = var.aws_region
-  profile = "seanPrivate"  # Profile for your personal AWS account
+  profile = "seanPrivate" # Profile for your personal AWS account
 }
 
 # VPC Module in CloudGuru AWS sandbox
@@ -97,11 +97,11 @@ resource "local_file" "TF-key" {
 
 # Data Source for AWS AMI in CloudGuru AWS sandbox
 #data "aws_ami" "amazon-linux" {
- # most_recent = true
-  #owners      = ["amazon"]
+# most_recent = true
+#owners      = ["amazon"]
 
-  #filter {
-   # name   = "name"
-    #values = ["amzn2-ami-hvm*"]
-  #}
+#filter {
+# name   = "name"
+#values = ["amzn2-ami-hvm*"]
+#}
 #}
