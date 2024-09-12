@@ -91,7 +91,9 @@ jobs:
           terraform plan -no-color -input=false \
             -var "shodan_api_key=$SHODAN_API_KEY" \
             -var "personal_aws_access_key=$TF_VAR_personal_aws_access_key" \
-            -var "personal_aws_secret_key=$TF_VAR_personal_aws_secret_key" > plan_output.txt
+            -var "personal_aws_secret_key=$TF_VAR_personal_aws_secret_key" \
+            | sed -E 's/((aws_access_key|aws_secret_key|api_key)[[:space:]]*=[[:space:]]*)\"[^\"]+\"/\1<SENSITIVE>/g' \
+            > plan_output.txt
 
       - name: Process and encode plan output
         id: process_plan
