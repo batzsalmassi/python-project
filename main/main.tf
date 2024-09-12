@@ -10,15 +10,14 @@ terraform {
 
 # Default provider for CloudGuru AWS sandbox environment
 provider "aws" {
-  region  = var.aws_region
-  profile = "CloudGuru" # Profile for CloudGuru sandbox
+  region = var.aws_region
 }
 
-# Aliased provider for personal AWS account (Route 53 management)
 provider "aws" {
-  alias   = "personal"
-  region  = var.aws_region
-  profile = "seanPrivate" # Profile for your personal AWS account
+  alias      = "personal"
+  region     = var.aws_region
+  access_key = var.personal_aws_access_key
+  secret_key = var.personal_aws_secret_key
 }
 
 # VPC Module in CloudGuru AWS sandbox
