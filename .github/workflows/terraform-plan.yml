@@ -85,44 +85,42 @@ jobs:
         working-directory: ./main
         env:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
-          TF_VAR_personal_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          TF_VAR_personal_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_personal_aws_access_key: ${{ secrets.PERSONAL_AWS_ACCESS_KEY_ID }}
+          TF_VAR_personal_aws_secret_key: ${{ secrets.PERSONAL_AWS_SECRET_ACCESS_KEY }}
         run: |
           terraform plan -no-color -input=false \
             -var "shodan_api_key=$SHODAN_API_KEY" \
             -var "personal_aws_access_key=$TF_VAR_personal_aws_access_key" \
             -var "personal_aws_secret_key=$TF_VAR_personal_aws_secret_key" \
-            | sed -E 's/((aws_access_key|aws_secret_key|api_key)[[:space:]]*=[[:space:]]*)\"[^\"]+\"/\1<SENSITIVE>/g' \
+            | grep -v "Refreshing state..." \
+            | grep -v "aws_access_key" \
+            | grep -v "aws_secret_key" \
+            | grep -v "api_key" \
             > plan_output.txt
 
-      - name: Process and encode plan output
-        id: process_plan
+      - name: Summarize Terraform Plan
+        id: plan_summary
         run: |
-          PLAN=$(cat main/plan_output.txt | sed 's/\\n/\\\\n/g' | sed 's/"/\\"/g')
-          ENCODED_PLAN=$(echo "$PLAN" | base64 -w 0)
-          echo "PLAN_OUTPUT=$ENCODED_PLAN" >> $GITHUB_OUTPUT
+          RESOURCES_ADDED=$(grep -c '^\s*\+ ' main/plan_output.txt || echo "0")
+          RESOURCES_CHANGED=$(grep -c '^\s*~ ' main/plan_output.txt || echo "0")
+          RESOURCES_DESTROYED=$(grep -c '^\s*- ' main/plan_output.txt || echo "0")
+          echo "SUMMARY=Resources to add: $RESOURCES_ADDED, change: $RESOURCES_CHANGED, destroy: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
 
-      - name: Post Plan Comment
+      - name: Post Plan Summary Comment
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
         env:
-          PLAN: ${{ steps.process_plan.outputs.PLAN_OUTPUT }}
+          PLAN_SUMMARY: ${{ steps.plan_summary.outputs.SUMMARY }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt-check.outcome }}\`
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-      
-            <details><summary>Show Plan</summary>
-      
-            \`\`\`
-            ${Buffer.from(process.env.PLAN, 'base64').toString()}
-            \`\`\`
-      
-            </details>
+            const output = `#### Terraform Plan Summary
+            ${{ env.PLAN_SUMMARY }}
+            
+            For security reasons, the full plan output is not displayed. Please review the changes carefully.
+            
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-      
+            
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
