@@ -51,15 +51,16 @@ data "aws_ami" "amazon-linux" {
 variable "shodan_api_key" {
   description = "Shodan API key for accessing the API"
   type        = string
+  sensitive = true
   default     = "" # You can set a default value or leave it empty for security reasons
 }
 
 variable "personal_aws_access_key" {
-  description = "Access key for personal AWS account"
-  type        = string
+  type      = string
+  sensitive = true
 }
 
 variable "personal_aws_secret_key" {
-  description = "Secret key for personal AWS account"
-  type        = string
+  type      = string
+  sensitive = true
 }
