@@ -1,25 +1,29 @@
-# Provisers 
-
 terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
-
     }
-
   }
   required_version = ">=1.3.7"
 }
 
-
+# Default provider for CloudGuru AWS sandbox environment
 provider "aws" {
   region = var.aws_region
+  # The CloudGuru credentials are set by the GitHub Actions workflow
+  # No need to specify them here
 }
 
-#---------------modules-------------------#
-# create vpc
+# Aliased provider for personal AWS account (Route 53 management)
+provider "aws" {
+  alias  = "personal"
+  region = var.aws_region
+  access_key = var.personal_aws_access_key
+  secret_key = var.personal_aws_secret_key
+}
 
+# VPC Module in CloudGuru AWS sandbox
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
@@ -36,12 +40,9 @@ module "vpc" {
   manage_default_network_acl    = false
   manage_default_security_group = false
   map_public_ip_on_launch       = true
-
 }
-#---------------security_group-------------------#
 
-
-
+# Security Group in CloudGuru AWS sandbox
 resource "aws_security_group" "Allow_services" {
   name        = "PROD"
   description = "global rule"
@@ -60,15 +61,15 @@ resource "aws_security_group" "Allow_services" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # access from any
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    description = "traffic in HTTP"
+    description = "traffic in HTTPS"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # access from any
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -80,13 +81,7 @@ resource "aws_security_group" "Allow_services" {
   }
 }
 
-
-
-
-
-#---------------key_pair-------------------#
-# create key_pair with private key and public_key
-
+# Key Pair in CloudGuru AWS sandbox
 resource "aws_key_pair" "TF-key" {
   key_name   = "TF-key"
   public_key = tls_private_key.rsa.public_key_openssh
@@ -101,3 +96,14 @@ resource "local_file" "TF-key" {
   content  = tls_private_key.rsa.private_key_pem
   filename = "/Users/sean.salmassi/github-Repos/python-project/TF-key"
 }
+
+# Data Source for AWS AMI in CloudGuru AWS sandbox
+#data "aws_ami" "amazon-linux" {
+#  most_recent = true
+#  owners      = ["amazon"]
+
+#  filter {
+#    name   = "name"
+#    values = ["amzn2-ami-hvm*"]
+#  }
+#}
