@@ -108,7 +108,6 @@ resource "aws_wafv2_ip_set" "allow_ips" {
   ip_address_version = "IPV4"
   addresses = [
     "77.137.78.61/32",
-    "213.57.17.130/32",
     "2.54.190.165/32",
     "199.203.9.228/32"
   ]
