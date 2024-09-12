@@ -3,10 +3,10 @@ module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "6.5.0"
 
-  name             = "shodapp_auto_scaling_group"
-  min_size         = 1
-  max_size         = 5
-  desired_capacity = 3
+  name                      = "shodapp_auto_scaling_group"
+  min_size                  = 1
+  max_size                  = 5
+  desired_capacity          = 3
   health_check_type         = "EC2"
   health_check_grace_period = 200
   vpc_zone_identifier       = [module.vpc.public_subnets[0], module.vpc.public_subnets[1]]
@@ -52,9 +52,9 @@ module "alb" {
 
   https_listeners = [
     {
-      port            = 443
-      protocol        = "HTTPS"
-      certificate_arn = module.acm.acm_certificate_arn
+      port               = 443
+      protocol           = "HTTPS"
+      certificate_arn    = module.acm.acm_certificate_arn
       target_group_index = 0
     }
   ]

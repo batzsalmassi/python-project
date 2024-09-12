@@ -6,7 +6,7 @@ module "acm" {
   domain_name       = "shodapp.seansalmassi.com"
   validation_method = "DNS"
 
-  create_route53_records = false  # DNS records will be managed manually in the personal account
+  create_route53_records = false # DNS records will be managed manually in the personal account
 
   tags = {
     Name = "shodapp.seansalmassi.com"
@@ -28,7 +28,7 @@ resource "aws_route53_record" "acm_validation" {
 
   for_each = { for option in module.acm.acm_certificate_domain_validation_options : option.domain_name => option }
 
-  zone_id = "Z00891131OSP4IF3CZM29"  # Hosted zone ID in the personal account
+  zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID in the personal account
 
   name    = each.value.resource_record_name
   type    = each.value.resource_record_type
@@ -40,7 +40,7 @@ resource "aws_route53_record" "acm_validation" {
 resource "aws_route53_record" "seansalmassi-com" {
   provider = aws.personal
 
-  zone_id = "Z00891131OSP4IF3CZM29"  # Hosted zone ID in the personal account
+  zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID in the personal account
 
   depends_on = [module.acm, null_resource.delay_acm]
   name       = "shodapp.seansalmassi.com"

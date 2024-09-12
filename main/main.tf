@@ -17,8 +17,8 @@ provider "aws" {
 
 # Aliased provider for personal AWS account (Route 53 management)
 provider "aws" {
-  alias  = "personal"
-  region = var.aws_region
+  alias      = "personal"
+  region     = var.aws_region
   access_key = var.personal_aws_access_key
   secret_key = var.personal_aws_secret_key
 }
