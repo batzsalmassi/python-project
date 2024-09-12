@@ -1,44 +1,29 @@
-variable "shodan_api_key" {
-  description = "Shodan API key for accessing the API"
-  type        = string
-  default     = "" # Defaults to an empty string if not provided
-}
-
-#---------------asg + Launch template-------------------#
-
+# Autoscaling Group Module in CloudGuru AWS sandbox
 module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "6.5.0"
 
-  # Autoscaling group
-  name             = "jk_auto_scaling_group"
-  min_size         = 1
-  max_size         = 5
-  desired_capacity = 3
-  # wait_for_capacity_timeout = 0
+  name                      = "shodapp_auto_scaling_group"
+  min_size                  = 1
+  max_size                  = 5
+  desired_capacity          = 3
   health_check_type         = "EC2"
   health_check_grace_period = 200
-  vpc_zone_identifier = [module.vpc.public_subnets[0],
-  module.vpc.public_subnets[1]]
+  vpc_zone_identifier       = [module.vpc.public_subnets[0], module.vpc.public_subnets[1]]
 
-
-
-
-  # Launch template
   launch_template_name        = "shodan-app-launch-template"
-  launch_template_description = "Launch template for asg"
+  launch_template_description = "Launch template for ASG"
   update_default_version      = true
   image_id                    = data.aws_ami.amazon-linux.id
-  key_name                    = "TF-key"
+  key_name                    = aws_key_pair.TF-key.key_name
   instance_type               = var.instance_type[1]
   user_data                   = base64encode(templatefile("user_data.sh", { SHODAN_API_KEY = var.shodan_api_key }))
   security_groups             = [aws_security_group.Allow_services.id]
 
-  target_group_arns = module.alb.target_group_arns # Association the target group to asg
+  target_group_arns = module.alb.target_group_arns
 }
 
-#---------------alb + target_groups + listners-------------------#
-
+# Application Load Balancer Module in CloudGuru AWS sandbox
 module "alb" {
   source             = "terraform-aws-modules/alb/aws"
   version            = "~> 6.0"
@@ -60,24 +45,20 @@ module "alb" {
       HealthCheckIntervalSeconds = 30
       HealthyThresholdCount      = 2
       UnhealthyThresholdCount    = 2
-      HealthCheckPath            = "status/200"
+      HealthCheckPath            = "/status/200"
       matcher                    = "200"
     }
   ]
 
-  # https with certificate 
   https_listeners = [
     {
-      port            = 443
-      protocol        = "HTTPS"
-      certificate_arn = module.acm.acm_certificate_arn
-
-      # If there are multiple target groups, this configuration is important 
+      port               = 443
+      protocol           = "HTTPS"
+      certificate_arn    = module.acm.acm_certificate_arn
       target_group_index = 0
     }
   ]
 
-  # redirect http to https
   http_tcp_listeners = [
     {
       port        = 80
@@ -94,12 +75,9 @@ module "alb" {
   tags = {
     Environment = "Production"
   }
-
 }
 
-
-#---------------MyScaleUpPolicy + MyScaleDownPolicy-------------------#
-
+# Autoscaling Policies in CloudGuru AWS sandbox
 resource "aws_autoscaling_policy" "MyScaleUpPolicy" {
   name                   = "MyScaleUpPolicy"
   adjustment_type        = "ChangeInCapacity"
@@ -116,18 +94,16 @@ resource "aws_autoscaling_policy" "MyScaleDownPolicy" {
   scaling_adjustment     = -1
 }
 
-
-#---------------CloudWatch + scaleUP/Donw-------------------#
-
+# CloudWatch Alarms in CloudGuru AWS sandbox
 resource "aws_cloudwatch_metric_alarm" "scale-up" {
   alarm_name          = "ScaleUp"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "CPUUtilization"
   namespace           = "AWS/EC2"
-  period              = 300 # During 300 secound
+  period              = 300
   statistic           = "Average"
-  threshold           = 40 # Greater 40 present meaning (CPU)
+  threshold           = 40
   alarm_description   = "Scale up if CPU utilization is greater than 40% for 5 minutes"
   alarm_actions       = [aws_autoscaling_policy.MyScaleUpPolicy.arn]
 
@@ -142,10 +118,10 @@ resource "aws_cloudwatch_metric_alarm" "scale-down" {
   evaluation_periods  = 1
   metric_name         = "CPUUtilization"
   namespace           = "AWS/EC2"
-  period              = 60 # During 60 secound
+  period              = 60
   statistic           = "Average"
-  threshold           = 20 # Lower 20 present meaning (CPU)
-  alarm_description   = "Scale down if CPU utilization is less than 20% for 1 minutes"
+  threshold           = 20
+  alarm_description   = "Scale down if CPU utilization is less than 20% for 1 minute"
   alarm_actions       = [aws_autoscaling_policy.MyScaleDownPolicy.arn]
 
   dimensions = {

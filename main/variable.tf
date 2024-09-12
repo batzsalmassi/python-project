@@ -46,3 +46,20 @@ data "aws_ami" "amazon-linux" {
     values = ["amzn2-ami-hvm*"]
   }
 }
+
+# Declare the shodan_api_key variable
+variable "shodan_api_key" {
+  description = "Shodan API key for accessing the API"
+  type        = string
+  default     = "" # You can set a default value or leave it empty for security reasons
+}
+
+variable "personal_aws_access_key" {
+  description = "Access key for personal AWS account"
+  type        = string
+}
+
+variable "personal_aws_secret_key" {
+  description = "Secret key for personal AWS account"
+  type        = string
+}
