@@ -13,25 +13,16 @@ module "acm" {
   }
 }
 
-# Fetch ACM certificate details from CloudGuru (sandbox) account
-data "aws_acm_certificate" "acm_cert" {
-  domain      = "shodapp.seansalmassi.com"
-  statuses    = ["PENDING_VALIDATION"]
-  most_recent = true
-}
-
 # Create DNS validation CNAME record in Personal Account's Route 53
 resource "aws_route53_record" "acm_validation" {
   provider = aws.personal  # Use the personal account provider alias
   zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of your personal domain
 
-  name = data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_name
-  type = data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_type
-  ttl  = 60
-
-  records = [
-    data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_value
-  ]
+  # Use the output from the ACM module for domain validation options
+  name    = module.acm.domain_validation_options[0].resource_record_name
+  type    = module.acm.domain_validation_options[0].resource_record_type
+  ttl     = 60
+  records = [module.acm.domain_validation_options[0].resource_record_value]
 
   depends_on = [module.acm]
 }
