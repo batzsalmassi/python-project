@@ -126,10 +126,10 @@ jobs:
               RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
               RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
               
-              # Instead of one complex string, split outputs into separate key-value pairs
-              echo "RESOURCES_ADDED=$RESOURCES_ADDED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_CHANGED=$RESOURCES_CHANGED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+              # Instead of plain numbers, prepend text for clarity
+              echo "RESOURCES_ADDED=Resources Added: $RESOURCES_ADDED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_CHANGED=Resources Changed: $RESOURCES_CHANGED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_DESTROYED=Resources Destroyed: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
             fi
           else
             echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
