@@ -162,14 +162,14 @@ jobs:
 
       - name: Save Terraform Plan
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: terraform-plan
           path: ./main/tfplan
 
       - name: Download Terraform Plan
         if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: terraform-plan
           path: ./main
