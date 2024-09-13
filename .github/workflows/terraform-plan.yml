@@ -118,21 +118,21 @@ jobs:
         run: |
           if [ -f redacted_plan.txt ]; then
             if grep -q "No changes detected in the plan" redacted_plan.txt; then
-              echo "SUMMARY=No changes detected" >> $GITHUB_OUTPUT
+              echo "::set-output name=SUMMARY::No changes detected"
             elif grep -q "No tfplan file found" redacted_plan.txt; then
-              echo "SUMMARY=Error: No Terraform plan file found" >> $GITHUB_OUTPUT
+              echo "::set-output name=SUMMARY::Error: No Terraform plan file found"
             else
               RESOURCES_ADDED=$(grep -c '^\s*\+ ' redacted_plan.txt || echo "0")
               RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
               RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
-              
+
               # Proper formatting for GitHub outputs
-              echo "RESOURCES_ADDED=$RESOURCES_ADDED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_CHANGED=$RESOURCES_CHANGED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+              echo "::set-output name=RESOURCES_ADDED::$RESOURCES_ADDED"
+              echo "::set-output name=RESOURCES_CHANGED::$RESOURCES_CHANGED"
+              echo "::set-output name=RESOURCES_DESTROYED::$RESOURCES_DESTROYED"
             fi
           else
-            echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
+            echo "::set-output name=SUMMARY::Error: redacted_plan.txt not found"
           fi
 
       - name: Log Plan Summary
