@@ -60,7 +60,7 @@ variable "personal_aws_secret_key" {
   sensitive = true
 }
 
-variable "shodan_api_key" {
+variable "personal_aws_access_key" {
   type      = string
   sensitive = true
 }
