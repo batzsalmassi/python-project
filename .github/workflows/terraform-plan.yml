@@ -144,31 +144,29 @@ jobs:
       - name: Post Plan Summary Comment
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
-        env:
-          PLAN_SUMMARY: ${{ steps.plan_summary.outputs.SUMMARY }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fs = require('fs');
-          const planOutput = fs.readFileSync('redacted_plan.txt', 'utf8');
-          const output = `#### Terraform Plan Summary
-          ${{ env.PLAN_SUMMARY }}
-          
-          <details><summary>Show Redacted Plan</summary>
-          
-          \`\`\`hcl
-          ${planOutput}
-          \`\`\`
-          </details>
-          
-          *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-          
-          await github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: output
-          });
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('redacted_plan.txt', 'utf8');
+            const output = `#### Terraform Plan Summary
+            ${{ steps.plan_summary.outputs.SUMMARY }}
+            
+            <details><summary>Show Redacted Plan</summary>
+            
+            \`\`\`hcl
+            ${planOutput}
+            \`\`\`
+            </details>
+            
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
 
       - name: Cache Terraform Plan
         uses: actions/cache@v3
