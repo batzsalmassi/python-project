@@ -14,15 +14,15 @@ module "acm" {
 
 # Create CNAME record in personal account for DNS validation
 resource "aws_route53_record" "acm_validation" {
-  provider = aws.personal  # Ensure that the CNAME record is created in the personal account
-  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of the personal domain
+  provider = aws.personal            # Ensure that the CNAME record is created in the personal account
+  zone_id  = "Z00891131OSP4IF3CZM29" # Hosted zone ID of the personal domain
 
-  name = module.acm.domain_validation_options[0].resource_record_name  # Corrected attribute
-  type = module.acm.domain_validation_options[0].resource_record_type  # Corrected attribute
+  name = module.acm.domain_validation_options[0].resource_record_name # Corrected attribute
+  type = module.acm.domain_validation_options[0].resource_record_type # Corrected attribute
   ttl  = 60
 
   records = [
-    module.acm.domain_validation_options[0].resource_record_value  # Corrected attribute
+    module.acm.domain_validation_options[0].resource_record_value # Corrected attribute
   ]
 
   depends_on = [module.acm]
