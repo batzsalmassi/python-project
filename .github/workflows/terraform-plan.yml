@@ -126,10 +126,10 @@ jobs:
               RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
               RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
               
-              # Instead of plain numbers, prepend text for clarity
-              echo "RESOURCES_ADDED=Resources Added: $RESOURCES_ADDED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_CHANGED=Resources Changed: $RESOURCES_CHANGED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_DESTROYED=Resources Destroyed: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+              # Proper formatting for GitHub outputs
+              echo "RESOURCES_ADDED=$RESOURCES_ADDED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_CHANGED=$RESOURCES_CHANGED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
             fi
           else
             echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
@@ -141,7 +141,6 @@ jobs:
           echo "Resources to change: ${{ steps.plan_summary.outputs.RESOURCES_CHANGED }}"
           echo "Resources to destroy: ${{ steps.plan_summary.outputs.RESOURCES_DESTROYED }}"
 
-
       - name: Post Plan Summary Comment
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
@@ -149,27 +148,27 @@ jobs:
           PLAN_SUMMARY: ${{ steps.plan_summary.outputs.SUMMARY }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const planOutput = fs.readFileSync('redacted_plan.txt', 'utf8');
-            const output = `#### Terraform Plan Summary
-            ${{ env.PLAN_SUMMARY }}
-            
-            <details><summary>Show Redacted Plan</summary>
-            
-            \`\`\`hcl
-            ${planOutput}
-            \`\`\`
-            </details>
-            
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            });
+        script: |
+          const fs = require('fs');
+          const planOutput = fs.readFileSync('redacted_plan.txt', 'utf8');
+          const output = `#### Terraform Plan Summary
+          ${{ env.PLAN_SUMMARY }}
+          
+          <details><summary>Show Redacted Plan</summary>
+          
+          \`\`\`hcl
+          ${planOutput}
+          \`\`\`
+          </details>
+          
+          *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+          
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          });
 
       - name: Cache Terraform Plan
         uses: actions/cache@v3
