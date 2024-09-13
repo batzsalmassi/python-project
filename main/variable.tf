@@ -62,5 +62,5 @@ variable "personal_aws_secret_key" {
 
 variable "personal_aws_access_key" {
   type      = string
-  sensitive = true
+  sensitive =   true
 }
