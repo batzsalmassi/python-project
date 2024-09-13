@@ -14,15 +14,15 @@ module "acm" {
 
 # Create CNAME record in personal account for DNS validation
 resource "aws_route53_record" "acm_validation" {
-  provider = aws.personal            # Record created in personal account
-  zone_id  = "Z00891131OSP4IF3CZM29" # Hosted zone ID of the personal domain
+  provider = aws.personal  # Record created in personal account
+  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of the personal domain
 
-  name = module.acm.validation_record_fqdns[0] # The ACM-generated DNS validation name
-  type = "CNAME"
-  ttl  = 60
+  name    = module.acm.validation_record_fqdns[0]  # The ACM-generated DNS validation name
+  type    = "CNAME"
+  ttl     = 60
 
   records = [
-    module.acm.validation_record_fqdns[0], # The ACM-generated DNS validation value
+    module.acm.validation_record_fqdns[0],  # The ACM-generated DNS validation value
   ]
 
   depends_on = [module.acm]
@@ -30,11 +30,11 @@ resource "aws_route53_record" "acm_validation" {
 
 # Create A record in the personal account for routing traffic
 resource "aws_route53_record" "seansalmassi_com" {
-  provider = aws.personal            # A record created in personal account
-  zone_id  = "Z00891131OSP4IF3CZM29" # Hosted zone ID of the personal domain
+  provider = aws.personal  # A record created in personal account
+  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of the personal domain
 
-  name = "shodapp.seansalmassi.com"
-  type = "A"
+  name    = "shodapp.seansalmassi.com"
+  type    = "A"
 
   alias {
     name                   = module.alb.lb_dns_name # ALB DNS name (probably in personal account)
@@ -47,7 +47,6 @@ resource "aws_route53_record" "seansalmassi_com" {
 
 # Delay resource for allowing time for ACM creation and validation
 resource "null_resource" "delay_acm" {
-  provider = aws.personal
   provisioner "local-exec" {
     command = <<-EOT
       uname_out=$(uname 2>/dev/null || echo "Windows")
