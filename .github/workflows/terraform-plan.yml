@@ -102,8 +102,8 @@ jobs:
 
       - name: Show Terraform Plan
         run: |
-          if [ -f tfplan ]; then
-            terraform show -no-color tfplan | sed 's/\(access_key\|secret_key\|api_key\).*= "[^"]*"/\1 = <redacted>/g' > redacted_plan.txt
+          if [ -f ./main/tfplan ]; then
+            terraform show -no-color ./main/tfplan | sed 's/\(access_key\|secret_key\|api_key\).*= "[^"]*"/\1 = <redacted>/g' > redacted_plan.txt
             if grep -qE '(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)' redacted_plan.txt; then
               echo "Error: Sensitive information detected in plan output" > redacted_plan.txt
             elif [ ! -s redacted_plan.txt ]; then
@@ -160,19 +160,13 @@ jobs:
               body: output
             });
 
-      - name: Save Terraform Plan
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+      - name: Cache Terraform Plan
+        uses: actions/cache@v3
         with:
-          name: terraform-plan
           path: ./main/tfplan
-
-      - name: Download Terraform Plan
-        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-plan
-          path: ./main
+          key: ${{ runner.os }}-terraform-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
 
       - name: Terraform Apply
         if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
@@ -181,7 +175,18 @@ jobs:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
           TF_VAR_personal_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           TF_VAR_personal_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: terraform apply -auto-approve -input=false tfplan
+        run: |
+          if [ -f tfplan ]; then
+            terraform apply -auto-approve -input=false tfplan
+          else
+            echo "Error: tfplan file not found. Re-running plan."
+            terraform plan -no-color -input=false \
+              -var "shodan_api_key=$SHODAN_API_KEY" \
+              -var "personal_aws_access_key=$TF_VAR_personal_aws_access_key" \
+              -var "personal_aws_secret_key=$TF_VAR_personal_aws_secret_key" \
+              -out=tfplan
+            terraform apply -auto-approve -input=false tfplan
+          fi
 
       - name: Terraform Plan Status
         if: steps.plan.outcome == 'failure'
