@@ -20,16 +20,11 @@ resource "time_sleep" "acm_delay" {
   create_duration = "60s" # Wait for 60 seconds to allow DNS propagation
 }
 
-# Output for ACM Certificate ARN
-output "certificate_arn" {
-  description = "The ARN of the certificate"
-  value       = module.acm.acm_certificate_arn
-}
-
 # Route 53 Record for ACM Validation in Personal Account
 resource "aws_route53_record" "acm_validation" {
   provider = aws.personal
 
+  # Loop through all domain validation options (for multi-domain certificates)
   for_each = { for option in module.acm.acm_certificate_domain_validation_options : option.domain_name => option }
 
   zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID in the personal account
@@ -40,6 +35,14 @@ resource "aws_route53_record" "acm_validation" {
   ttl     = 60
 
   depends_on = [module.acm, time_sleep.acm_delay]
+}
+
+# ACM Certificate Validation - Waits for DNS Record Propagation
+resource "aws_acm_certificate_validation" "this" {
+  certificate_arn        = module.acm.acm_certificate_arn
+  validation_record_fqdns = [for option in module.acm.acm_certificate_domain_validation_options : option.resource_record_name]
+
+  depends_on = [aws_route53_record.acm_validation]
 }
 
 # Route 53 Record for ALB in Personal Account
