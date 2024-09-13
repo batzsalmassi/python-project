@@ -1,4 +1,4 @@
-# ACM Certificate in CloudGuru AWS sandbox
+# ACM Certificate in CloudGuru AWS sandbox (no provider alias needed)
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
   version = "~> 4.0"
@@ -14,9 +14,9 @@ module "acm" {
   }
 }
 
-# Route 53 Record for ACM Validation in Personal Account
+# Route 53 Record for ACM Validation in Personal AWS Account
 resource "aws_route53_record" "acm_validation" {
-  provider = aws.personal  # Use personal AWS account
+  provider = aws.personal  # Use personal AWS account for DNS validation records
 
   # Loop through all domain validation options (for multi-domain certificates)
   for_each = { for option in module.acm.acm_certificate_domain_validation_options : option.domain_name => option }
@@ -36,10 +36,8 @@ resource "aws_route53_record" "acm_validation" {
   depends_on = [module.acm]
 }
 
-# ACM Certificate Validation - Waits for DNS Record Propagation in Personal Account
+# ACM Certificate Validation (no provider alias for CloudGuru, defaults to the main provider)
 resource "aws_acm_certificate_validation" "this" {
-  provider = aws.cloudguru  # Use CloudGuru AWS account
-
   certificate_arn        = module.acm.acm_certificate_arn
   validation_record_fqdns = [for option in module.acm.acm_certificate_domain_validation_options : option.resource_record_name]
 
@@ -49,7 +47,7 @@ resource "aws_acm_certificate_validation" "this" {
 
 # Route 53 Record for ALB in Personal AWS Account
 resource "aws_route53_record" "seansalmassi-com" {
-  provider = aws.personal  # Use personal AWS account
+  provider = aws.personal  # Use personal AWS account for DNS records
 
   zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID in the personal account
 
