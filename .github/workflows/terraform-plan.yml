@@ -126,8 +126,8 @@ jobs:
               RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
               RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
               
-              # Format the summary correctly for GitHub Actions
-              echo "SUMMARY=Resources to add: $RESOURCES_ADDED, Resources to change: $RESOURCES_CHANGED, Resources to destroy: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+              # Avoid commas and special characters by using semicolons
+              echo "SUMMARY=Resources to add: $RESOURCES_ADDED; Resources to change: $RESOURCES_CHANGED; Resources to destroy: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
             fi
           else
             echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
