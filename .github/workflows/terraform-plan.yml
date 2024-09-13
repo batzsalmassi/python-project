@@ -126,12 +126,21 @@ jobs:
               RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
               RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
               
-              # Avoid commas and special characters by using semicolons
-              echo "SUMMARY=Resources to add: $RESOURCES_ADDED; Resources to change: $RESOURCES_CHANGED; Resources to destroy: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+              # Instead of one complex string, split outputs into separate key-value pairs
+              echo "RESOURCES_ADDED=$RESOURCES_ADDED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_CHANGED=$RESOURCES_CHANGED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
             fi
           else
             echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
           fi
+
+      - name: Log Plan Summary
+        run: |
+          echo "Resources to add: ${{ steps.plan_summary.outputs.RESOURCES_ADDED }}"
+          echo "Resources to change: ${{ steps.plan_summary.outputs.RESOURCES_CHANGED }}"
+          echo "Resources to destroy: ${{ steps.plan_summary.outputs.RESOURCES_DESTROYED }}"
+
 
       - name: Post Plan Summary Comment
         uses: actions/github-script@v6
