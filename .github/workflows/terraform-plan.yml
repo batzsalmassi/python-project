@@ -98,7 +98,16 @@ jobs:
 
       - name: Show Terraform Plan
         run: |
-          terraform show -no-color tfplan | sed 's/\(access_key\|secret_key\|api_key\).*= "\(.*\)"/\1 = <redacted>/g' > redacted_plan.txt
+          if [ -f tfplan ]; then
+            terraform show -no-color tfplan | sed 's/\(access_key\|secret_key\|api_key\).*= "[^"]*"/\1 = <redacted>/g' > redacted_plan.txt
+            if grep -qE '(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)' redacted_plan.txt; then
+              echo "Error: Sensitive information detected in plan output" > redacted_plan.txt
+            elif [ ! -s redacted_plan.txt ]; then
+              echo "No changes detected in the plan" > redacted_plan.txt
+            fi
+          else
+            echo "No tfplan file found" > redacted_plan.txt
+          fi
 
       - name: Summarize Terraform Plan
         id: plan_summary
