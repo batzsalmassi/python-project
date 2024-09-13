@@ -2,8 +2,12 @@ name: "Terraform Plan and Apply"
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, closed]
     paths:
       - 'main/**'
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
@@ -156,8 +160,22 @@ jobs:
               body: output
             });
 
+      - name: Save Terraform Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v2
+        with:
+          name: terraform-plan
+          path: ./main/tfplan
+
+      - name: Download Terraform Plan
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+        uses: actions/download-artifact@v2
+        with:
+          name: terraform-plan
+          path: ./main
+
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
         working-directory: ./main
         env:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
