@@ -92,18 +92,18 @@ jobs:
             -var "shodan_api_key=$SHODAN_API_KEY" \
             -var "personal_aws_access_key=$TF_VAR_personal_aws_access_key" \
             -var "personal_aws_secret_key=$TF_VAR_personal_aws_secret_key" \
-            | grep -v "Refreshing state..." \
-            | grep -v "aws_access_key" \
-            | grep -v "aws_secret_key" \
-            | grep -v "api_key" \
-            > plan_output.txt
+            -out=tfplan
+
+      - name: Redact sensitive information from plan output
+        run: |
+          terraform show -no-color tfplan | sed 's/\(access_key\|secret_key\|api_key\).*= "\(.*\)"/\1 = <redacted>/g' > redacted_plan.txt
 
       - name: Summarize Terraform Plan
         id: plan_summary
         run: |
-          RESOURCES_ADDED=$(grep -c '^\s*\+ ' main/plan_output.txt || echo "0")
-          RESOURCES_CHANGED=$(grep -c '^\s*~ ' main/plan_output.txt || echo "0")
-          RESOURCES_DESTROYED=$(grep -c '^\s*- ' main/plan_output.txt || echo "0")
+          RESOURCES_ADDED=$(grep -c '^\s*\+ ' redacted_plan.txt || echo "0")
+          RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
+          RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
           echo "SUMMARY=Resources to add: $RESOURCES_ADDED, change: $RESOURCES_CHANGED, destroy: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
 
       - name: Post Plan Summary Comment
@@ -114,10 +114,17 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('redacted_plan.txt', 'utf8');
             const output = `#### Terraform Plan Summary
             ${{ env.PLAN_SUMMARY }}
             
-            For security reasons, the full plan output is not displayed. Please review the changes carefully.
+            <details><summary>Show Redacted Plan</summary>
+            
+            \`\`\`hcl
+            ${planOutput}
+            \`\`\`
+            </details>
             
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
             
@@ -136,10 +143,7 @@ jobs:
           TF_VAR_personal_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           TF_VAR_personal_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          terraform apply -auto-approve -input=false \
-            -var "shodan_api_key=$SHODAN_API_KEY" \
-            -var "personal_aws_access_key=$TF_VAR_personal_aws_access_key" \
-            -var "personal_aws_secret_key=$TF_VAR_personal_aws_secret_key"
+          terraform apply -auto-approve -input=false tfplan
 
       - name: Terraform Plan Status
         if: steps.plan.outcome == 'failure'
