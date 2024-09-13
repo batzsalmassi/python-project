@@ -1,64 +1,61 @@
-# ACM Certificate in CloudGuru AWS sandbox (no provider alias needed)
+# Create ACM certificate in CloudGuru account
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
   version = "~> 4.0"
 
-  domain_name       = "shodapp.seansalmassi.com"
-  validation_method = "DNS"
-
-  # Don't create Route 53 DNS validation records in CloudGuru
-  create_route53_records = false
+  domain_name              = "shodapp.seansalmassi.com"
+  validation_method        = "DNS"  # DNS validation
+  create_route53_records   = false  # Disable Route 53 record creation in CloudGuru account
 
   tags = {
     Name = "shodapp.seansalmassi.com"
   }
 }
 
-# Route 53 Record for ACM Validation in Personal AWS Account
+# Create CNAME record in personal account for DNS validation
 resource "aws_route53_record" "acm_validation" {
-  provider = aws.personal  # Use personal AWS account for DNS validation records
+  provider = aws.personal  # Record created in personal account
+  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of the personal domain
 
-  # Loop through all domain validation options (for multi-domain certificates)
-  for_each = { for option in module.acm.acm_certificate_domain_validation_options : option.domain_name => option }
-
-  zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID in the personal account
-
-  name    = each.value.resource_record_name
-  type    = each.value.resource_record_type
-  records = [each.value.resource_record_value]
+  name    = module.acm.validation_record_fqdns[0]  # The ACM-generated DNS validation name
+  type    = "CNAME"
   ttl     = 60
 
-  lifecycle {
-    create_before_destroy = true  # Ensure DNS record is fully created before any further actions
-  }
+  records = [
+    module.acm.validation_record_fqdns[0],  # The ACM-generated DNS validation value
+  ]
 
-  # Ensure the ACM certificate in CloudGuru is created before the DNS validation record
   depends_on = [module.acm]
 }
 
-# ACM Certificate Validation (no provider alias for CloudGuru, defaults to the main provider)
-resource "aws_acm_certificate_validation" "this" {
-  certificate_arn        = module.acm.acm_certificate_arn
-  validation_record_fqdns = [for option in module.acm.acm_certificate_domain_validation_options : option.resource_record_name]
+# Create A record in the personal account for routing traffic
+resource "aws_route53_record" "seansalmassi_com" {
+  provider = aws.personal  # A record created in personal account
+  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of the personal domain
 
-  # Ensure DNS validation records in personal AWS account are created before certificate validation
-  depends_on = [aws_route53_record.acm_validation]
-}
-
-# Route 53 Record for ALB in Personal AWS Account
-resource "aws_route53_record" "seansalmassi-com" {
-  provider = aws.personal  # Use personal AWS account for DNS records
-
-  zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID in the personal account
-
-  name       = "shodapp.seansalmassi.com"
-  type       = "A"
+  name    = "shodapp.seansalmassi.com"
+  type    = "A"
 
   alias {
-    name                   = module.alb.lb_dns_name # DNS name of the ALB
-    zone_id                = module.alb.lb_zone_id  # Hosted zone ID of the ALB
+    name                   = module.alb.lb_dns_name  # ALB DNS name (probably in personal account)
+    zone_id                = module.alb.lb_zone_id   # ALB hosted zone ID (probably in personal account)
     evaluate_target_health = true
   }
 
-  depends_on = [module.acm]
+  depends_on = [aws_route53_record.acm_validation]  # Wait until the DNS validation is complete
+}
+
+# Delay resource for allowing time for ACM creation and validation
+resource "null_resource" "delay_acm" {
+  provider = aws.personal
+  provisioner "local-exec" {
+    command = <<-EOT
+      uname_out=$(uname 2>/dev/null || echo "Windows")
+      case "$uname_out" in
+          Linux*) sleep 60;;
+          Darwin*) sleep 60;;  # macOS
+          *) powershell -Command Start-Sleep -Seconds 60;;
+      esac
+    EOT
+  }
 }
