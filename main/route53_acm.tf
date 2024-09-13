@@ -1,64 +1,68 @@
-# ACM Certificate in CloudGuru AWS sandbox (no provider alias needed)
+
+# ACM Certificate in CloudGuru (sandbox) Account
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
   version = "~> 4.0"
 
-  domain_name       = "shodapp.seansalmassi.com"
-  validation_method = "DNS"
-
-  # Don't create Route 53 DNS validation records in CloudGuru
-  create_route53_records = false
+  domain_name              = "shodapp.seansalmassi.com"
+  validation_method        = "DNS"
+  create_route53_records   = false  # We are manually creating DNS records in the personal account
 
   tags = {
     Name = "shodapp.seansalmassi.com"
   }
 }
 
-# Route 53 Record for ACM Validation in Personal AWS Account
+# Fetch ACM certificate details from CloudGuru (sandbox) account
+data "aws_acm_certificate" "acm_cert" {
+  domain      = "shodapp.seansalmassi.com"
+  statuses    = ["PENDING_VALIDATION"]
+  most_recent = true
+}
+
+# Create DNS validation CNAME record in Personal Account's Route 53
 resource "aws_route53_record" "acm_validation" {
-  provider = aws.personal  # Use personal AWS account for DNS validation records
+  provider = aws.personal  # Use the personal account provider alias
+  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of your personal domain
 
-  # Loop through all domain validation options (for multi-domain certificates)
-  for_each = { for option in module.acm.acm_certificate_domain_validation_options : option.domain_name => option }
+  name = data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_name
+  type = data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_type
+  ttl  = 60
 
-  zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID in the personal account
+  records = [
+    data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_value
+  ]
 
-  name    = each.value.resource_record_name
-  type    = each.value.resource_record_type
-  records = [each.value.resource_record_value]
-  ttl     = 60
-
-  lifecycle {
-    create_before_destroy = true  # Ensure DNS record is fully created before any further actions
-  }
-
-  # Ensure the ACM certificate in CloudGuru is created before the DNS validation record
   depends_on = [module.acm]
 }
 
-# ACM Certificate Validation (no provider alias for CloudGuru, defaults to the main provider)
-resource "aws_acm_certificate_validation" "this" {
-  certificate_arn        = module.acm.acm_certificate_arn
-  validation_record_fqdns = [for option in module.acm.acm_certificate_domain_validation_options : option.resource_record_name]
-
-  # Ensure DNS validation records in personal AWS account are created before certificate validation
-  depends_on = [aws_route53_record.acm_validation]
-}
-
-# Route 53 Record for ALB in Personal AWS Account
+# Create A record in Personal Account after successful ACM validation
 resource "aws_route53_record" "seansalmassi-com" {
-  provider = aws.personal  # Use personal AWS account for DNS records
+  provider = aws.personal  # Use the personal account provider alias
+  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of your personal domain
 
-  zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID in the personal account
-
-  name       = "shodapp.seansalmassi.com"
-  type       = "A"
+  name    = "shodapp.seansalmassi.com"
+  type    = "A"
 
   alias {
-    name                   = module.alb.lb_dns_name # DNS name of the ALB
-    zone_id                = module.alb.lb_zone_id  # Hosted zone ID of the ALB
+    name                   = module.alb.lb_dns_name  # ALB DNS name from personal account
+    zone_id                = module.alb.lb_zone_id   # ALB hosted zone ID from personal account
     evaluate_target_health = true
   }
 
-  depends_on = [module.acm]
+  depends_on = [aws_route53_record.acm_validation]  # Ensure validation record exists before A record
+}
+
+# Optional delay for ACM validation to complete
+resource "null_resource" "delay_acm" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      uname_out=$(uname 2>/dev/null || echo "Windows")
+      case "$uname_out" in
+          Linux*) sleep 60;;
+          Darwin*) sleep 60;;  # macOS
+          *) powershell -Command Start-Sleep -Seconds 60;;
+      esac
+    EOT
+  }
 }
