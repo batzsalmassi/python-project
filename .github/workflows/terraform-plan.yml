@@ -104,12 +104,18 @@ jobs:
         id: plan_summary
         run: |
           if [ -f redacted_plan.txt ]; then
-            RESOURCES_ADDED=$(grep -c '^\s*\+ ' redacted_plan.txt || echo "0")
-            RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
-            RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
-            echo "SUMMARY=Resources to add: $RESOURCES_ADDED, change: $RESOURCES_CHANGED, destroy: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+            if grep -q "No changes detected in the plan" redacted_plan.txt; then
+              echo "SUMMARY=No changes detected" >> $GITHUB_OUTPUT
+            elif grep -q "No tfplan file found" redacted_plan.txt; then
+              echo "SUMMARY=Error: No Terraform plan file found" >> $GITHUB_OUTPUT
+            else
+              RESOURCES_ADDED=$(grep -c '^\s*\+ ' redacted_plan.txt || echo "0")
+              RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
+              RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
+              echo "SUMMARY=Resources to add: $RESOURCES_ADDED, change: $RESOURCES_CHANGED, destroy: $RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "SUMMARY=No changes detected" >> $GITHUB_OUTPUT
+            echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
           fi
 
       - name: Post Plan Summary Comment
