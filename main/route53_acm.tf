@@ -1,3 +1,4 @@
+
 # ACM Certificate in CloudGuru (sandbox) Account
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
@@ -12,13 +13,14 @@ module "acm" {
   }
 }
 
+
 # Fetch ACM certificate details from CloudGuru (sandbox) account
 data "aws_acm_certificate" "acm_cert" {
   domain      = "shodapp.seansalmassi.com"
   statuses    = ["PENDING_VALIDATION"]
   most_recent = true
 }
-
+  
 # Create DNS validation CNAME record in Personal Account's Route 53
 resource "aws_route53_record" "acm_validation" {
   provider = aws.personal  # Use the personal account provider alias
