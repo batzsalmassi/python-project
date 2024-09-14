@@ -12,27 +12,28 @@ module "acm" {
   }
 }
 
-# Fetch ACM certificate details from CloudGuru (sandbox) account
-data "aws_acm_certificate" "acm_cert" {
-  domain      = "shodapp.seansalmassi.com"
-  statuses    = ["PENDING_VALIDATION"]
-  most_recent = true
-}
-
 # Create DNS validation CNAME record in Personal Account's Route 53
 resource "aws_route53_record" "acm_validation" {
   provider = aws.personal  # Use the personal account provider alias
-  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of your personal domain
+  for_each = {
+    for dvo in module.acm.acm_certificate_domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
 
-  name = data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_name
-  type = data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_type
-  ttl  = 60
+  zone_id = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of your personal domain
+  name    = each.value.name
+  type    = each.value.type
+  ttl     = 60
+  records = [each.value.record]
+}
 
-  records = [
-    data.aws_acm_certificate.acm_cert.domain_validation_options[0].resource_record_value
-  ]
-
-  depends_on = [module.acm]
+# Validate the certificate
+resource "aws_acm_certificate_validation" "cert" {
+  certificate_arn         = module.acm.acm_certificate_arn
+  validation_record_fqdns = [for record in aws_route53_record.acm_validation : record.fqdn]
 }
 
 # Create A record in Personal Account after successful ACM validation
@@ -49,19 +50,5 @@ resource "aws_route53_record" "seansalmassi-com" {
     evaluate_target_health = true
   }
 
-  depends_on = [aws_route53_record.acm_validation]  # Ensure validation record exists before A record
-}
-
-# Optional delay for ACM validation to complete
-resource "null_resource" "delay_acm" {
-  provisioner "local-exec" {
-    command = <<-EOT
-      uname_out=$(uname 2>/dev/null || echo "Windows")
-      case "$uname_out" in
-          Linux*) sleep 60;;
-          Darwin*) sleep 60;;  # macOS
-          *) powershell -Command Start-Sleep -Seconds 60;;
-      esac
-    EOT
-  }
+  depends_on = [aws_acm_certificate_validation.cert]  # Ensure validation is complete before A record
 }
