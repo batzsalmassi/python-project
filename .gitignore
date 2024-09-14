@@ -37,3 +37,4 @@ __pycache__/
 shodan_results.csv
 backend.tf
 secret/
+.terraform.lock.hcl
