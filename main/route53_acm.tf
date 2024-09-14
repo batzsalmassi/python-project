@@ -15,7 +15,7 @@ module "acm" {
 
 # Create DNS validation CNAME record in Personal Account's Route 53
 resource "aws_route53_record" "acm_validation" {
-  provider = aws.personal  # Use the personal account provider alias
+  provider = aws.personal # Use the personal account provider alias
   for_each = {
     for dvo in module.acm.acm_certificate_domain_validation_options : dvo.domain_name => {
       name   = dvo.resource_record_name
@@ -24,7 +24,7 @@ resource "aws_route53_record" "acm_validation" {
     }
   }
 
-  zone_id = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of your personal domain
+  zone_id = "Z00891131OSP4IF3CZM29" # Hosted zone ID of your personal domain
   name    = each.value.name
   type    = each.value.type
   ttl     = 60
@@ -51,5 +51,5 @@ resource "aws_route53_record" "seansalmassi-com" {
     evaluate_target_health = true
   }
 
-  depends_on = [aws_acm_certificate_validation.cert]  # Ensure validation is complete before A record
+  depends_on = [aws_acm_certificate_validation.cert] # Ensure validation is complete before A record
 }
