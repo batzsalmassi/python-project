@@ -26,7 +26,7 @@ variable "public_subnets" {
 
 
 variable "instance_type" {
-  default = ["t3.2xlarge", "t2.small"]
+  default = ["t3.2xlarge", "t2.small", "t2.micro", "t2.medium"]
   type    = list(string)
 
 }
