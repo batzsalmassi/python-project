@@ -1,11 +1,12 @@
+
 # ACM Certificate in CloudGuru (sandbox) Account
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
   version = "~> 4.0"
 
-  domain_name              = "shodapp.seansalmassi.com"
-  validation_method        = "DNS"
-  create_route53_records   = false  # We are manually creating DNS records in the personal account
+  domain_name            = "shodapp.seansalmassi.com"
+  validation_method      = "DNS"
+  create_route53_records = false # We are manually creating DNS records in the personal account
 
   tags = {
     Name = "shodapp.seansalmassi.com"
@@ -38,15 +39,15 @@ resource "aws_acm_certificate_validation" "cert" {
 
 # Create A record in Personal Account after successful ACM validation
 resource "aws_route53_record" "seansalmassi-com" {
-  provider = aws.personal  # Use the personal account provider alias
-  zone_id  = "Z00891131OSP4IF3CZM29"  # Hosted zone ID of your personal domain
+  provider = aws.personal            # Use the personal account provider alias
+  zone_id  = "Z00891131OSP4IF3CZM29" # Hosted zone ID of your personal domain
 
-  name    = "shodapp.seansalmassi.com"
-  type    = "A"
+  name = "shodapp.seansalmassi.com"
+  type = "A"
 
   alias {
-    name                   = module.alb.lb_dns_name  # ALB DNS name from personal account
-    zone_id                = module.alb.lb_zone_id   # ALB hosted zone ID from personal account
+    name                   = module.alb.lb_dns_name # ALB DNS name from personal account
+    zone_id                = module.alb.lb_zone_id  # ALB hosted zone ID from personal account
     evaluate_target_health = true
   }
 
