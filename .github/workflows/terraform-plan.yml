@@ -103,7 +103,13 @@ jobs:
       - name: Show Terraform Plan
         run: |
           if [ -f ./main/tfplan ]; then
-            terraform show -no-color ./main/tfplan | sed 's/\(access_key\|secret_key\|api_key\).*= "[^"]*"/\1 = <redacted>/g' > redacted_plan.txt
+            if ! terraform show -no-color ./main/tfplan > plan_output.txt 2>plan_error.txt; then
+              echo "Error occurred while showing plan. Using sanitized plan file contents instead."
+              # Use grep to exclude lines containing sensitive information
+              grep -vE '(access_key|secret_key|api_key).*= ' ./main/tfplan > plan_output.txt
+              echo "Note: Some information has been removed to protect sensitive data." >> plan_output.txt
+            fi
+            sed 's/\(access_key\|secret_key\|api_key\).*= "[^"]*"/\1 = <redacted>/g' plan_output.txt > redacted_plan.txt
             if grep -qE '(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)' redacted_plan.txt; then
               echo "Error: Sensitive information detected in plan output" > redacted_plan.txt
             elif [ ! -s redacted_plan.txt ]; then
