@@ -80,13 +80,13 @@ resource "aws_security_group" "Allow_services" {
 
 # Key Pair in CloudGuru AWS sandbox
 #resource "aws_key_pair" "TF-key" {
- # key_name   = "TF-key"
-  #public_key = tls_private_key.rsa.public_key_openssh
+# key_name   = "TF-key"
+#public_key = tls_private_key.rsa.public_key_openssh
 #}
 
 #resource "tls_private_key" "rsa" {
- # algorithm = "RSA"
-  #rsa_bits  = 4096
+# algorithm = "RSA"
+#rsa_bits  = 4096
 #}
 
 #resource "local_file" "TF-key" {

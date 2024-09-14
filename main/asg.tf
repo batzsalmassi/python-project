@@ -16,9 +16,9 @@ module "asg" {
   update_default_version      = true
   image_id                    = data.aws_ami.amazon-linux.id
   #key_name                    = aws_key_pair.TF-key.key_name
-  instance_type               = var.instance_type[2]
-  user_data                   = base64encode(templatefile("user_data.sh", { SHODAN_API_KEY = var.shodan_api_key }))
-  security_groups             = [aws_security_group.Allow_services.id]
+  instance_type   = var.instance_type[2]
+  user_data       = base64encode(templatefile("user_data.sh", { SHODAN_API_KEY = var.shodan_api_key }))
+  security_groups = [aws_security_group.Allow_services.id]
 
   target_group_arns = module.alb.target_group_arns
 }
