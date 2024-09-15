@@ -193,17 +193,15 @@ jobs:
           TF_VAR_personal_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           TF_VAR_personal_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          if [ -f tfplan ]; then
-            terraform apply -auto-approve -input=false tfplan
-          else
-            echo "Error: tfplan file not found. Re-running plan."
-            terraform plan -no-color -input=false \
-              -var "shodan_api_key=$SHODAN_API_KEY" \
-              -var "personal_aws_access_key=$TF_VAR_personal_aws_access_key" \
-              -var "personal_aws_secret_key=$TF_VAR_personal_aws_secret_key" \
-              -out=tfplan
-            terraform apply -auto-approve -input=false tfplan
-          fi
+          # Always create a fresh plan
+          terraform plan -no-color -input=false \
+            -var "shodan_api_key=$SHODAN_API_KEY" \
+            -var "personal_aws_access_key=$TF_VAR_personal_aws_access_key" \
+            -var "personal_aws_secret_key=$TF_VAR_personal_aws_secret_key" \
+            -out=tfplan
+          
+          # Apply the fresh plan
+          terraform apply -auto-approve -input=false tfplan
 
       - name: Terraform Plan Status
         if: steps.plan.outcome == 'failure'
