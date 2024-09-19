@@ -8,8 +8,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'main/**'
   workflow_dispatch:
 
 env:
@@ -30,7 +28,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
+          fetch-depth: 0  
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -205,8 +203,38 @@ jobs:
               body: output
             });
 
-      - name: Terraform Apply
+      - name: Detect Merge Commit
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: detect_merge
+        run: |
+          echo "Checking if the commit is a merge commit..."
+          PARENTS=$(git rev-parse --pretty=%P -1)
+          COUNT=$(echo $PARENTS | wc -w)
+          if [ "$COUNT" -gt 1 ]; then
+            echo "is_merge=true" >> $GITHUB_ENV
+          else
+            echo "is_merge=false" >> $GITHUB_ENV
+          fi
+
+      - name: Check if /main was changed
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: check_main_changes
+        run: |
+          echo "Checking if any files under /main were changed..."
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          echo "Changed files: $CHANGED_FILES"
+          if echo "$CHANGED_FILES" | grep -q '^main/'; then
+            echo "main_changed=true" >> $GITHUB_ENV
+          else
+            echo "main_changed=false" >> $GITHUB_ENV
+          fi
+
+      - name: Terraform Apply
+        if: >
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main' &&
+          env.is_merge == 'true' &&
+          env.main_changed == 'true'
         working-directory: ./main
         env:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
