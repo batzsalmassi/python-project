@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'main/**'  # Ensure pushes only trigger when changes are in the main/ directory
   workflow_dispatch:
 
 env:
@@ -96,7 +98,9 @@ jobs:
 
       - name: Terraform plan
         id: plan
-        if: github.event_name == 'pull_request' && (steps.fmt-check.outcome == 'success' || steps.fmt-recheck.outcome == 'success')
+        if: >
+          github.event_name == 'pull_request' &&
+          (steps.fmt-check.outcome == 'success' || steps.fmt-recheck.outcome == 'success')
         working-directory: ./main
         env:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
