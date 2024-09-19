@@ -206,7 +206,7 @@ jobs:
             });
 
       - name: Terraform Apply
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.event.pull_request.merged == true)
         working-directory: ./main
         env:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
