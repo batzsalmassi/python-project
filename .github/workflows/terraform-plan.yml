@@ -125,10 +125,12 @@ jobs:
 
       - name: Summarize Terraform Plan
         id: plan_summary
-        if: steps.plan.outcome == 'success'
         run: |
           if [ -f redacted_plan.txt ]; then
-            if grep -q "No changes detected in the plan" redacted_plan.txt; then
+            # Extra safety check to ensure no sensitive info is in the file
+            if grep -qiE '(access_key|secret_key|api_key).*=\s*"[^"]+"' redacted_plan.txt; then
+              echo "SUMMARY=Error: Potential sensitive information detected in plan output. Please review the redaction process." >> $GITHUB_OUTPUT
+            elif grep -q "No changes detected in the plan" redacted_plan.txt; then
               echo "SUMMARY=No changes. Infrastructure is up-to-date." >> $GITHUB_OUTPUT
             elif grep -q "No tfplan file found" redacted_plan.txt; then
               echo "SUMMARY=Error: No Terraform plan file found." >> $GITHUB_OUTPUT
@@ -137,10 +139,12 @@ jobs:
               RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
               RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
               
-              echo "RESOURCES_ADDED=$RESOURCES_ADDED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_CHANGED=$RESOURCES_CHANGED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
-              echo "SUMMARY=Plan: $RESOURCES_ADDED to add, $RESOURCES_CHANGED to change, $RESOURCES_DESTROYED to destroy." >> $GITHUB_OUTPUT
+              {
+                echo "RESOURCES_ADDED=$RESOURCES_ADDED"
+                echo "RESOURCES_CHANGED=$RESOURCES_CHANGED"
+                echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED"
+                echo "SUMMARY=Plan: $RESOURCES_ADDED to add, $RESOURCES_CHANGED to change, $RESOURCES_DESTROYED to destroy."
+              } >> $GITHUB_OUTPUT
             fi
           else
             echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
