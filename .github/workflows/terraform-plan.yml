@@ -126,16 +126,31 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: ./main
         run: |
+          # Disable 'set -e' to handle grep exit codes manually
+          set +e
+
           if [ -f redacted_plan.txt ]; then
             if grep -q "No changes detected in the plan" redacted_plan.txt; then
               echo "SUMMARY=No changes detected" >> $GITHUB_OUTPUT
             elif grep -q "No tfplan file found" redacted_plan.txt; then
               echo "SUMMARY=Error: No Terraform plan file found" >> $GITHUB_OUTPUT
             else
-              RESOURCES_ADDED=$(grep -cE '^\s*\+ ' redacted_plan.txt || echo "0")
-              RESOURCES_CHANGED=$(grep -cE '^\s*~ ' redacted_plan.txt || echo "0")
-              RESOURCES_DESTROYED=$(grep -cE '^\s*- ' redacted_plan.txt || echo "0")
-              # Proper formatting for GitHub outputs
+              # Count resources added
+              RESOURCES_ADDED=$(grep -cE '^[[:space:]]*\+ ' redacted_plan.txt)
+              # Count resources changed
+              RESOURCES_CHANGED=$(grep -cE '^[[:space:]]*~ ' redacted_plan.txt)
+              # Count resources destroyed
+              RESOURCES_DESTROYED=$(grep -cE '^[[:space:]]*- ' redacted_plan.txt)
+
+              # Re-enable 'set -e'
+              set -e
+
+              # Ensure variables have default values if unset
+              RESOURCES_ADDED=${RESOURCES_ADDED:-0}
+              RESOURCES_CHANGED=${RESOURCES_CHANGED:-0}
+              RESOURCES_DESTROYED=${RESOURCES_DESTROYED:-0}
+
+              # Write outputs to GITHUB_OUTPUT
               echo "RESOURCES_ADDED=${RESOURCES_ADDED}" >> $GITHUB_OUTPUT
               echo "RESOURCES_CHANGED=${RESOURCES_CHANGED}" >> $GITHUB_OUTPUT
               echo "RESOURCES_DESTROYED=${RESOURCES_DESTROYED}" >> $GITHUB_OUTPUT
