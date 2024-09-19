@@ -8,8 +8,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'main/**'
   workflow_dispatch:
 
 env:
@@ -206,7 +204,7 @@ jobs:
             });
 
       - name: Terraform Apply
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.event.pull_request.merged == true)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: ./main
         env:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
