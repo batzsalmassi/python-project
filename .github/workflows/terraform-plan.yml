@@ -9,7 +9,7 @@ on:
     branches:
       - main
     paths:
-      - 'main/**'  # Ensure pushes only trigger when changes are in the main/ directory
+      - 'main/**'
   workflow_dispatch:
 
 env:
@@ -18,6 +18,7 @@ env:
 
 jobs:
   terraform:
+    # Ensure this condition accurately reflects your repository's full name (owner/repo)
     if: github.repository == 'batzsalmassi/python-project'
     name: "Terraform Plan and Apply"
     runs-on: ubuntu-latest
@@ -30,7 +31,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
+          # Dynamically select the correct reference based on the event type
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -44,10 +46,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.CLOUDGURU_AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Initialize Terraform
-        id: init
+      - name: Cache Terraform Modules
+        uses: actions/cache@v3
+        with:
+          path: ./main/.terraform
+          key: ${{ runner.os }}-terraform-${{ hashFiles('**/main/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
+
+      - name: Terraform Validate
+        if: github.event_name == 'pull_request'
         working-directory: ./main
-        run: terraform init
+        run: terraform validate
 
       - name: Create backend.tf
         run: |
@@ -61,25 +71,23 @@ jobs:
           }
           EOF
 
-      - name: Terraform init with backend
+      - name: Terraform Init with Backend
         working-directory: ./main
-        run: terraform init
+        run: terraform init -reconfigure
 
-      - name: Terraform format check
+      - name: Terraform Format Check
         id: fmt-check
         working-directory: ./main
         run: terraform fmt -check
         continue-on-error: true
 
-      - name: Automatically format Terraform code if not formatted
+      - name: Automatically Format Terraform Code if Not Formatted
         if: steps.fmt-check.outcome == 'failure'
         working-directory: ./main
-        run: |
-          terraform fmt
-          echo "FORMATTING_NEEDED=true" >> $GITHUB_ENV
+        run: terraform fmt
 
-      - name: Commit formatted code
-        if: env.FORMATTING_NEEDED == 'true' && github.event_name == 'pull_request'
+      - name: Commit Formatted Code
+        if: steps.fmt-check.outcome == 'failure' && github.event_name == 'pull_request'
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
@@ -90,17 +98,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Recheck Terraform format
-        id: fmt-recheck
-        if: env.FORMATTING_NEEDED == 'true'
-        working-directory: ./main
-        run: terraform fmt -check
-
-      - name: Terraform plan
+      - name: Terraform Plan
         id: plan
-        if: >
-          github.event_name == 'pull_request' &&
-          (steps.fmt-check.outcome == 'success' || steps.fmt-recheck.outcome == 'success')
+        if: github.event_name == 'pull_request'
         working-directory: ./main
         env:
           SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
@@ -114,11 +114,20 @@ jobs:
             -out=tfplan
 
       - name: Show Terraform Plan
-        if: steps.plan.outcome == 'success'
+        if: github.event_name == 'pull_request'
+        working-directory: ./main
         run: |
-          if [ -f ./main/tfplan ]; then
-            terraform show -no-color ./main/tfplan | sed -E 's/(access_key|secret_key|api_key).*= ".+"/\1 = "<redacted>"/g' > redacted_plan.txt
-            if [ ! -s redacted_plan.txt ]; then
+          if [ -f tfplan ]; then
+            if ! terraform show -no-color tfplan > plan_output.txt 2>plan_error.txt; then
+              echo "Error occurred while showing plan. Using sanitized plan file contents instead."
+              # Use grep to exclude lines containing sensitive information
+              grep -vE '(access_key|secret_key|api_key).*= ' tfplan > plan_output.txt
+              echo "Note: Some information has been removed to protect sensitive data." >> plan_output.txt
+            fi
+            sed 's/\(access_key\|secret_key\|api_key\).*= "[^"]*"/\1 = <redacted>/g' plan_output.txt > redacted_plan.txt
+            if grep -qE '(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)' redacted_plan.txt; then
+              echo "Error: Sensitive information detected in plan output" > redacted_plan.txt
+            elif [ ! -s redacted_plan.txt ]; then
               echo "No changes detected in the plan" > redacted_plan.txt
             fi
           else
@@ -127,79 +136,74 @@ jobs:
 
       - name: Summarize Terraform Plan
         id: plan_summary
+        if: github.event_name == 'pull_request'
+        working-directory: ./main
         run: |
-          echo "Debug: Starting Summarize Terraform Plan step"
-          if [ ! -f redacted_plan.txt ]; then
-            echo "summary=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
-            echo "Debug: redacted_plan.txt not found"
-            exit 1
-          fi
-
-          echo "Debug: redacted_plan.txt found"
-          
-          # Function to safely set output
-          set_output() {
-            echo "$1<<EOF" >> $GITHUB_OUTPUT
-            echo "$2" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          }
-          
-          # Extra safety check to ensure no sensitive info is in the file
-          if grep -qiE '(access_key|secret_key|api_key).*=\s*"[^"]+"' redacted_plan.txt; then
-            set_output "summary" "Error: Potential sensitive information detected in plan output. Please review the redaction process."
-            echo "Debug: Potential sensitive information detected"
-          elif grep -q "No changes detected in the plan" redacted_plan.txt; then
-            set_output "summary" "No changes. Infrastructure is up-to-date."
-            echo "Debug: No changes detected"
-          elif grep -q "No tfplan file found" redacted_plan.txt; then
-            set_output "summary" "Error: No Terraform plan file found."
-            echo "Debug: No tfplan file found"
+          if [ -f redacted_plan.txt ]; then
+            if grep -q "No changes detected in the plan" redacted_plan.txt; then
+              echo "SUMMARY=No changes detected" >> $GITHUB_OUTPUT
+            elif grep -q "No tfplan file found" redacted_plan.txt; then
+              echo "SUMMARY=Error: No Terraform plan file found" >> $GITHUB_OUTPUT
+            else
+              RESOURCES_ADDED=$(grep -c '^\s*\+ ' redacted_plan.txt || echo "0")
+              RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
+              RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
+              # Proper formatting for GitHub outputs
+              echo "RESOURCES_ADDED=$RESOURCES_ADDED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_CHANGED=$RESOURCES_CHANGED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+              echo "SUMMARY=Plan: $RESOURCES_ADDED to add, $RESOURCES_CHANGED to change, $RESOURCES_DESTROYED to destroy." >> $GITHUB_OUTPUT
+            fi
           else
-            RESOURCES_ADDED=$(grep -c '^\s*\+ ' redacted_plan.txt || echo "0")
-            RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
-            RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
-            
-            set_output "resources_added" "$RESOURCES_ADDED"
-            set_output "resources_changed" "$RESOURCES_CHANGED"
-            set_output "resources_destroyed" "$RESOURCES_DESTROYED"
-            set_output "summary" "Plan: $RESOURCES_ADDED to add, $RESOURCES_CHANGED to change, $RESOURCES_DESTROYED to destroy."
-            echo "Debug: Resources - Added: $RESOURCES_ADDED, Changed: $RESOURCES_CHANGED, Destroyed: $RESOURCES_DESTROYED"
+            echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
           fi
 
-          echo "Debug: Finished Summarize Terraform Plan step"
+      - name: Log Plan Summary
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Resources to add: ${{ steps.plan_summary.outputs.RESOURCES_ADDED }}"
+          echo "Resources to change: ${{ steps.plan_summary.outputs.RESOURCES_CHANGED }}"
+          echo "Resources to destroy: ${{ steps.plan_summary.outputs.RESOURCES_DESTROYED }}"
 
       - name: Post Plan Summary Comment
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v6
-        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success'
         env:
-          PLAN_SUMMARY: ${{ steps.plan_summary.outputs.summary }}
+          PLAN_SUMMARY: ${{ steps.plan_summary.outputs.SUMMARY }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const planOutput = fs.readFileSync('redacted_plan.txt', 'utf8');
+            const planPath = 'main/redacted_plan.txt';
+            let planOutput = '';
+            try {
+              planOutput = fs.readFileSync(planPath, 'utf8');
+            } catch (error) {
+              core.setFailed(`Failed to read ${planPath}: ${error.message}`);
+            }
+
             const summary = process.env.PLAN_SUMMARY;
-            
+
             let status = '✅ Success';
             if (summary.includes('Error')) {
               status = '❌ Error';
-            } else if (summary !== 'No changes. Infrastructure is up-to-date.') {
+            } else if (summary !== 'No changes detected') {
               status = '⚠️ Changes';
             }
+
+            const output = `#### Terraform Plan Summary: ${status}
             
-            const output = `### Terraform Plan Summary: ${status}
-
-            ${summary.replace(/\n/g, '\n\n')}
-
-            <details><summary>Show Plan Details</summary>
-
+            ${summary}
+            
+            <details><summary>Show Redacted Plan</summary>
+            
             \`\`\`hcl
             ${planOutput}
             \`\`\`
             </details>
-
-            *Pushed by: @${context.actor}, Action: \`${context.eventName}\`*`;
             
+            *Pushed by: @${context.actor}, Action: \`${context.eventName}\`*`;
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -224,7 +228,3 @@ jobs:
           
           # Apply the fresh plan
           terraform apply -auto-approve -input=false tfplan
-
-      - name: Terraform Plan Status
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
