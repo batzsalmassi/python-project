@@ -169,12 +169,14 @@ jobs:
       - name: Post Plan Summary Comment
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request' && steps.plan.outcome == 'success'
+        env:
+          PLAN_SUMMARY: ${{ steps.plan_summary.outputs.summary }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const planOutput = fs.readFileSync('redacted_plan.txt', 'utf8');
-            const summary = '${{ steps.plan_summary.outputs.SUMMARY }}';
+            const summary = process.env.PLAN_SUMMARY;
             
             let status = '✅ Success';
             if (summary.includes('Error')) {
@@ -185,16 +187,16 @@ jobs:
             
             const output = `### Terraform Plan Summary: ${status}
 
-            ${summary}
-            
+            ${summary.replace(/\n/g, '\n\n')}
+
             <details><summary>Show Plan Details</summary>
-            
+
             \`\`\`hcl
             ${planOutput}
             \`\`\`
             </details>
-            
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            *Pushed by: @${context.actor}, Action: \`${context.eventName}\`*`;
             
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
