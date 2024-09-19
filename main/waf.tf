@@ -107,7 +107,7 @@ resource "aws_wafv2_ip_set" "allow_ips" {
   scope              = "REGIONAL"
   ip_address_version = "IPV4"
   addresses = [
-    "77.137.78.61/28",
+    "77.137.78.61/32",
     "2.54.190.165/32",
     "84.228.161.67/32",
     "31.154.46.114/32",
