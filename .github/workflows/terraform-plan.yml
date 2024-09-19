@@ -106,16 +106,8 @@ jobs:
       - name: Show Terraform Plan
         run: |
           if [ -f ./main/tfplan ]; then
-            if ! terraform show -no-color ./main/tfplan > plan_output.txt 2>plan_error.txt; then
-              echo "Error occurred while showing plan. Using sanitized plan file contents instead."
-              # Use grep to exclude lines containing sensitive information
-              grep -vE '(access_key|secret_key|api_key).*= ' ./main/tfplan > plan_output.txt
-              echo "Note: Some information has been removed to protect sensitive data." >> plan_output.txt
-            fi
-            sed 's/\(access_key\|secret_key\|api_key\).*= "[^"]*"/\1 = <redacted>/g' plan_output.txt > redacted_plan.txt
-            if grep -qE '(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)' redacted_plan.txt; then
-              echo "Error: Sensitive information detected in plan output" > redacted_plan.txt
-            elif [ ! -s redacted_plan.txt ]; then
+            terraform show -no-color ./main/tfplan | sed -E 's/(access_key|secret_key|api_key).*= ".+"/\1 = "<redacted>"/g' > redacted_plan.txt
+            if [ ! -s redacted_plan.txt ]; then
               echo "No changes detected in the plan" > redacted_plan.txt
             fi
           else
@@ -127,28 +119,26 @@ jobs:
         run: |
           if [ -f redacted_plan.txt ]; then
             if grep -q "No changes detected in the plan" redacted_plan.txt; then
-              echo "::set-output name=SUMMARY::No changes detected"
+              echo "SUMMARY=No changes. Infrastructure is up-to-date." >> $GITHUB_OUTPUT
             elif grep -q "No tfplan file found" redacted_plan.txt; then
-              echo "::set-output name=SUMMARY::Error: No Terraform plan file found"
+              echo "SUMMARY=Error: No Terraform plan file found." >> $GITHUB_OUTPUT
             else
               RESOURCES_ADDED=$(grep -c '^\s*\+ ' redacted_plan.txt || echo "0")
               RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
               RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
-
-              # Proper formatting for GitHub outputs
-              echo "::set-output name=RESOURCES_ADDED::$RESOURCES_ADDED"
-              echo "::set-output name=RESOURCES_CHANGED::$RESOURCES_CHANGED"
-              echo "::set-output name=RESOURCES_DESTROYED::$RESOURCES_DESTROYED"
+              
+              echo "RESOURCES_ADDED=$RESOURCES_ADDED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_CHANGED=$RESOURCES_CHANGED" >> $GITHUB_OUTPUT
+              echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
+              echo "SUMMARY=Plan: $RESOURCES_ADDED to add, $RESOURCES_CHANGED to change, $RESOURCES_DESTROYED to destroy." >> $GITHUB_OUTPUT
             fi
           else
-            echo "::set-output name=SUMMARY::Error: redacted_plan.txt not found"
+            echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
           fi
 
       - name: Log Plan Summary
         run: |
-          echo "Resources to add: ${{ steps.plan_summary.outputs.RESOURCES_ADDED }}"
-          echo "Resources to change: ${{ steps.plan_summary.outputs.RESOURCES_CHANGED }}"
-          echo "Resources to destroy: ${{ steps.plan_summary.outputs.RESOURCES_DESTROYED }}"
+          echo "${{ steps.plan_summary.outputs.SUMMARY }}"
 
       - name: Post Plan Summary Comment
         uses: actions/github-script@v6
@@ -158,10 +148,20 @@ jobs:
           script: |
             const fs = require('fs');
             const planOutput = fs.readFileSync('redacted_plan.txt', 'utf8');
-            const output = `#### Terraform Plan Summary
-            ${{ steps.plan_summary.outputs.SUMMARY }}
+            const summary = '${{ steps.plan_summary.outputs.SUMMARY }}';
             
-            <details><summary>Show Redacted Plan</summary>
+            let status = '✅ Success';
+            if (summary.includes('Error')) {
+              status = '❌ Error';
+            } else if (summary !== 'No changes. Infrastructure is up-to-date.') {
+              status = '⚠️ Changes';
+            }
+            
+            const output = `### Terraform Plan Summary: ${status}
+
+            ${summary}
+            
+            <details><summary>Show Plan Details</summary>
             
             \`\`\`hcl
             ${planOutput}
@@ -176,14 +176,6 @@ jobs:
               repo: context.repo.repo,
               body: output
             });
-
-      - name: Cache Terraform Plan
-        uses: actions/cache@v3
-        with:
-          path: ./main/tfplan
-          key: ${{ runner.os }}-terraform-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-terraform-
 
       - name: Terraform Apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
