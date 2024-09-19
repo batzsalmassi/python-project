@@ -46,19 +46,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.CLOUDGURU_AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Cache Terraform Modules
-        uses: actions/cache@v3
-        with:
-          path: ./main/.terraform
-          key: ${{ runner.os }}-terraform-${{ hashFiles('**/main/*.tf') }}
-          restore-keys: |
-            ${{ runner.os }}-terraform-
-
-      - name: Terraform Validate
-        if: github.event_name == 'pull_request'
-        working-directory: ./main
-        run: terraform validate
-
       - name: Create backend.tf
         run: |
           cat <<EOF > ./main/backend.tf
