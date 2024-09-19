@@ -132,14 +132,14 @@ jobs:
             elif grep -q "No tfplan file found" redacted_plan.txt; then
               echo "SUMMARY=Error: No Terraform plan file found" >> $GITHUB_OUTPUT
             else
-              RESOURCES_ADDED=$(grep -c '^\s*\+ ' redacted_plan.txt || echo "0")
-              RESOURCES_CHANGED=$(grep -c '^\s*~ ' redacted_plan.txt || echo "0")
-              RESOURCES_DESTROYED=$(grep -c '^\s*- ' redacted_plan.txt || echo "0")
+              RESOURCES_ADDED=$(grep -cE '^\s*\+ ' redacted_plan.txt || echo "0")
+              RESOURCES_CHANGED=$(grep -cE '^\s*~ ' redacted_plan.txt || echo "0")
+              RESOURCES_DESTROYED=$(grep -cE '^\s*- ' redacted_plan.txt || echo "0")
               # Proper formatting for GitHub outputs
-              echo "RESOURCES_ADDED=$RESOURCES_ADDED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_CHANGED=$RESOURCES_CHANGED" >> $GITHUB_OUTPUT
-              echo "RESOURCES_DESTROYED=$RESOURCES_DESTROYED" >> $GITHUB_OUTPUT
-              echo "SUMMARY=Plan: $RESOURCES_ADDED to add, $RESOURCES_CHANGED to change, $RESOURCES_DESTROYED to destroy." >> $GITHUB_OUTPUT
+              echo "RESOURCES_ADDED=${RESOURCES_ADDED}" >> $GITHUB_OUTPUT
+              echo "RESOURCES_CHANGED=${RESOURCES_CHANGED}" >> $GITHUB_OUTPUT
+              echo "RESOURCES_DESTROYED=${RESOURCES_DESTROYED}" >> $GITHUB_OUTPUT
+              echo "SUMMARY=Plan: ${RESOURCES_ADDED} to add, ${RESOURCES_CHANGED} to change, ${RESOURCES_DESTROYED} to destroy." >> $GITHUB_OUTPUT
             fi
           else
             echo "SUMMARY=Error: redacted_plan.txt not found" >> $GITHUB_OUTPUT
