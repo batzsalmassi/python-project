@@ -137,7 +137,9 @@ jobs:
           
           # Function to safely set output
           set_output() {
-            echo "$1=$2" >> $GITHUB_OUTPUT
+            echo "$1<<EOF" >> $GITHUB_OUTPUT
+            echo "$2" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           }
           
           # Extra safety check to ensure no sensitive info is in the file
