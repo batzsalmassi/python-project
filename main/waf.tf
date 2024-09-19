@@ -111,7 +111,7 @@ resource "aws_wafv2_ip_set" "allow_ips" {
     "2.54.190.165/32",
     "84.228.161.67/32",
     "31.154.46.114/32",
-    "213.57.17.130/32"
+           "213.57.17.130/32"
   ]
 }
 
@@ -119,8 +119,7 @@ resource "aws_wafv2_ip_set" "allow_ips" {
 # creare regex to block after the / 
 resource "aws_wafv2_regex_pattern_set" "invalid_url" {
   name  = "block_all_after_slash"
-  scope = "REGIONAL"
-
+  scope = "REGIONA
   regular_expression {
     # block all after the / 
     regex_string = "^/.+"
